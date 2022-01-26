@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import PasswordResetForm
 from django.utils.http import urlsafe_base64_encode
@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin
-from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm
+from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
 # Create your views here.
 
@@ -31,12 +31,8 @@ def list_users(request):
 
 @user_passes_test(is_admin_or_super_admin)
 def edit_user(request, pk):
-     # GET request
-    try:
-        user = User.objects.get(id=pk)
-    except:
-        return HttpResponse("Error occured", status=404)
-    
+    # GET request
+    user = get_object_or_404(User, pk=pk)
     if request.method == "POST":
         # process form and save updated fields
         edit_user_form = EditUserForm(request.POST, user=user)
@@ -71,13 +67,13 @@ def create_user(request):
             if user.acc_type == ADMIN:
                 designation = "Admin"
             # render the form with a success flash message attached
-            messages.success(request, "%s: %s %s has been created successfully" %(designation, user.first_name, user.last_name))
+            messages.success(request, "%s: %s %s has been created successfully." %(designation, user.first_name, user.last_name))
             
         # Rerender the form 
         return render(request, 'user/create_user.html.development', {"form": create_user_form})
 
     else:
-        # Render the AdminCreateForm or the SuperAdminCreateForm depending on the account type
+        # Render the AdminCreateUserForm or the SuperAdminCreateUserForm depending on the account type
         if user_type == SUPER_ADMIN:
             return render(request, 'user/create_user.html.development' ,{"form": SuperAdminCreateUserForm()})
         elif user_type == ADMIN:
@@ -90,7 +86,16 @@ def profile(request):
 
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
-    pass
+    user = get_object_or_404(User, pk=pk)
+    full_name = "%s %s" %(user.first_name, user.last_name)
+    if request.method == "POST":
+        form = RevokePasswordForm(request.POST, user=user)
+        if form.is_valid():
+            form.revoke_password()
+        return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
+    else:
+        form = RevokePasswordForm()
+        return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
 
 
 def reset_password_request(request):

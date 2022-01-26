@@ -1,5 +1,5 @@
 from django.forms import ModelForm
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, password_validation
 from django import forms
 from django.db.models import Q
 from passwords.fields import PasswordField
@@ -123,10 +123,24 @@ class EditUserForm(forms.Form):
 
         self.user.save()
         return self.user
+
+class RevokePasswordForm(forms.Form):
+    new_password = PasswordField(label="New password")
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
         
+    def clean_new_password(self):
+        password = self.cleaned_data["new_password"]
+        if password_validation.validate_password(password, self.user) is None:
+            return password
 
-
-
+    def revoke_password(self):
+        self.user.set_password(self.cleaned_data["password"])
+        self.user.save(update_fields=["password"])
+        return self.user
+        
         
         
     
