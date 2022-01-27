@@ -15,6 +15,7 @@ acc_choices = [
 ]
 
 class PrepaidMeterUser(AbstractUser):
+    username = None # Remove the username field
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
     # The target clients of the system are not so much of 'email people' 
@@ -28,9 +29,13 @@ class PrepaidMeterUser(AbstractUser):
     REQUIRED_FIELDS = ["first_name", "last_name", 'address'] 
     objects = PrepaidMeterUserManager()
 
+    def __str__(self):
+        return "%s %s" %(self.first_name, self.last_name)
+
 
 # The price_per_unit for each manager acccount
 class PricePerUnit(models.Model):
     # Delete the priceperunit associated with the manager once the manager is deleted
     manager = models.OneToOneField(PrepaidMeterUser, unique=True, on_delete=models.CASCADE)
+    label = models.CharField(max_length=255, unique=True)
     price_per_unit = models.PositiveIntegerField()
