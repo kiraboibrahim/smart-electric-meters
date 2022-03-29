@@ -1,3 +1,5 @@
-SUPER_ADMIN = 2
-ADMIN = 4
-MANAGER = 8
+# Account type masks
+NONE          = 0
+SUPER_ADMIN   = 1
+ADMIN         = 2
+MANAGER       = 4
