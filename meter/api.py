@@ -39,9 +39,11 @@ class MTNMoMo:
         503 : "Service temporarily unavailable. please try again later."
     }
 
-    TRANSACTION_PENDING = 1
-    TRANSACTION_SUCCESSFUL = 2
-    TRANSACTION_FAILED = 4
+    TRANSACTION_STATES = {
+        "PENDING" : 1,
+        "SUCCESSFUL": 2,
+        "FAILED": 4
+    }
 
     def __init__(self, subscription_key, api_user, api_key):
         self.subscription_key = subscription_key
@@ -66,6 +68,10 @@ class MTNMoMo:
         response = requests.get("%s/requesttopay/%s" %(MTNMoMo.BASE_URL, reference_id))
         if response.status_code != 200:
             raise MTNMoMoException(response.status_code, MTNMoMo.ERRORS.get(response.status_code, "Unknown Error"))
+
+        transaction_status = json.loads(response.text)["status"]
+        
+        return MTNMoMo.TRANSACTION_STATES[transaction_status]
 
     def request_access_token(self):
         """
