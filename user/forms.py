@@ -1,6 +1,7 @@
 from django.forms import ModelForm
 from django.contrib.auth import get_user_model
 from django import forms
+from django.db.models import Q
 from passwords.fields import PasswordField
 from .acc_types import ADMIN, MANAGER
 
@@ -72,8 +73,60 @@ class SuperAdminCreateUserForm(CreateUserBaseForm):
 
 
 
-class EditUserForm(ModelForm):
-    class Meta:
-        model = User
-        # The only fields that are allowed to be edited
-        fields = ["first_name", "last_name", "email", "phone_no", "address"]
+class EditUserForm(forms.Form):
+    first_name = forms.CharField(max_length=255)
+    last_name = forms.CharField(max_length=255)
+    email = forms.EmailField(required=False)
+    phone_no = forms.CharField(max_length=10)
+    address = forms.CharField(max_length=255)
+
+    def __init__(self, *args, user=None, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+        
+    def clean_email(self):
+        return self._clean("email")
+
+
+    def clean_phone_no(self):
+        return self._clean("phone_no")
+        
+    def _clean(self, field_name):
+        new_field_value = self.cleaned_data[field_name]
+        original_field_value = getattr(self.user, field_name, None)
+        if new_field_value and new_field_value != original_field_value:
+            # Field has been changed
+            try:
+                User.objects.get(Q(**{field_name:new_field_value}) & ~Q(id=self.user.id))
+            except User.DoesNotExist:
+                return new_field_value
+            raise forms.ValidationError("Duplicate values are not allowed")
+        
+        return original_field_value
+        
+    def update(self):
+        update_fields = []
+        if self.user.first_name != self.cleaned_data["first_name"]:
+            self.user.first_name = self.cleaned_data["first_name"]
+
+        if self.user.last_name != self.cleaned_data["last_name"]:
+            self.user.last_name = self.cleaned_data["last_name"]
+
+        if self.user.phone_no != self.cleaned_data["phone_no"]:
+            self.user.phone_no = self.cleaned_data["phone_no"]
+
+        if self.user.address != self.cleaned_data["address"]:
+            self.user.address = self.cleaned_data["address"]
+
+        if self.user.email != self.cleaned_data["email"]:
+            self.user.email = self.cleaned_data["email"]
+
+        self.user.save()
+        return self.user
+        
+
+
+
+        
+        
+    

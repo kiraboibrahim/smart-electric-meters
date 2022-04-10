@@ -5,7 +5,8 @@ from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
+from django.db.models import Q
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
@@ -15,34 +16,48 @@ User = get_user_model()
 
 @user_passes_test(is_admin_or_super_admin)
 def list_users(request):
-    user_type = request.user.acc_type
+    user_type = SUPER_ADMIN or request.user.acc_type
+    users = None
     if user_type == SUPER_ADMIN:
-        # List admin manger accounts
-        pass
+        # List admin and  manger accounts
+        users = User.objects.filter(Q(acc_type=MANAGER) | Q(acc_type=ADMIN))
+        
     elif user_type == ADMIN:
         # List only manager accounts
-        pass
+        users = User.objects.filter(Q(acc_type=MANAGER))
+        
+    return render(request, "user/list_accounts.html.development", {"users": users})
     
 
 @user_passes_test(is_admin_or_super_admin)
 def edit_user(request, pk):
+     # GET request
+    try:
+        user = User.objects.get(id=pk)
+    except:
+        return HttpResponse("Error occured", status=404)
+    
     if request.method == "POST":
         # process form and save updated fields
-        edit_user_form = EdituserForm(request.POST)
-        try:
-            user = User.objects.get(id=pk)
-        except:
-            return Http404("Error occured")
-
+        edit_user_form = EditUserForm(request.POST, user=user)
         if edit_user_form.is_valid():
-            pass
-        
-    # render form
-    return render(request, "user/edit_user.html.development", {"form": EditUserForm()}) 
+            edit_user_form.update() # Save the updated fields
+            messages.success(request, "Changes saved successfully.")
+        return render(request, "user/edit_user.html.development", {"form": edit_user_form})
+    else:
+        initial = {
+            "first_name" : user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "phone_no": user.phone_no,
+            "address": user.address,
+        }
+        edit_user_form = EditUserForm(initial=initial)
+        return render(request, "user/edit_user.html.development", {"form": edit_user_form}) 
 
 @user_passes_test(is_admin_or_super_admin)
 def create_user(request):
-    user_type = SUPER_ADMIN or request.user.acc_type
+    user_type = request.user.acc_type
     designation = "Manager"
     if request.method == "POST":
         # Process the form and create user
@@ -66,9 +81,12 @@ def create_user(request):
         if user_type == SUPER_ADMIN:
             return render(request, 'user/create_user.html.development' ,{"form": SuperAdminCreateUserForm()})
         elif user_type == ADMIN:
-            return render(request, 'user/creaet_user.html.development', {"form": AdminCreateUserForm()})
+            return render(request, 'user/create_user.html.development', {"form": AdminCreateUserForm()})
 
-        
+@login_required
+def profile(request):
+    return render(request, "user/profile.html.development")
+
 
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
@@ -77,7 +95,3 @@ def revoke_password(request, pk):
 
 def reset_password_request(request):
     pass
-
-@login_required
-def profile(request):
-    return render(request, "user/profile.html.development")
