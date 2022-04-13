@@ -1,5 +1,6 @@
 from django.forms import ModelForm
 from django.contrib.auth import get_user_model, password_validation
+from django.contrib.auth.forms import PasswordResetForm  
 from django import forms
 from django.db.models import Q
 from passwords.fields import PasswordField
@@ -142,5 +143,6 @@ class RevokePasswordForm(forms.Form):
         return self.user
         
         
-        
-    
+class ResetPasswordForm(PasswordResetForm):
+    email = None
+    phone_no = forms.CharField(label="Phone Number", max_length=10)

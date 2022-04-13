@@ -3,12 +3,17 @@ from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.forms import PasswordResetForm
 from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth import get_user_model
+from django.urls import reverse
+from django.utils.encoding import force_bytes
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.db.models import Q
+from django.conf import settings
+from django.template.loader import render_to_string
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin
-from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm
+from meter.api import SMS
+from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
 # Create your views here.
 
@@ -79,10 +84,6 @@ def create_user(request):
         elif user_type == ADMIN:
             return render(request, 'user/create_user.html.development', {"form": AdminCreateUserForm()})
 
-@login_required
-def profile(request):
-    return render(request, "user/profile.html.development")
-
 
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
@@ -98,5 +99,53 @@ def revoke_password(request, pk):
         return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
 
 
-def reset_password_request(request):
-    pass
+@user_passes_test(is_admin_or_super_admin)
+def delete_user(request, pk):
+    user = get_object_or_404(User, pk=pk)
+    # Delete user 
+    user.delete()
+    full_name = "%s %s" %(user.first_name, user.last_name)
+    messages.success(request, "User: %s deleted successfully" %(full_name))
+    return HttpResponseRedirect(request.META.get("HTTP_REFERER"))
+
+def reset_password(request):
+    if request.method == "POST":
+        form = ResetPasswordForm(request.POST)
+        user = None
+        
+        if form.is_valid():
+            phone_no = form.cleaned_data["phone_no"]
+            try:
+                user = User.objects.get(phone_no=phone_no)
+            except:
+                pass
+            
+            if user is not None:
+                token = default_token_generator.make_token(user)
+                uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+
+                c = {
+                    "site_name": "LEGIT SYSTEMS",
+                    "protocol": "http",
+                    "domain": "localhost:8000",
+                    "uid": uidb64,
+                    "token": token,
+                }
+                message_body = render_to_string("user/reset_password_sms.txt.development", c)
+               
+                # send the SMS with the password reset link
+
+                sms_client = SMS(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN, settings.TWILIO_PHONE_NO)
+                phone_no = "%s%s" %("+256", phone_no[1:])
+                sms_client.send(phone_no, message_body)
+            messages.success(request, "SMS with password reset instructions has been sent.")
+            return render(request, "user/reset_password.html.development", {"form": form})
+
+    else:
+        form = ResetPasswordForm()
+        return render(request, "user/reset_password.html.development", {"form": form})
+
+
+@login_required
+def profile(request):
+    return render(request, "user/profile.html.development")
