@@ -53,21 +53,6 @@ set_new_price_per_unit_payload = {
     "PRICE_UNIT": "UGX",
     "REMARK": ""
 }
-        
-
-class ManufacturerAPIInterface(metaclass=abc.ABCMeta):
-    
-    @classmethod
-    def __subclasshook__(cls, subclass):
-        return (hasattr(subclass, "buy_token") and callable(subclass.buy_token) or NotImplementedError)
-
-    @abc.abstractmethod
-    def buy_token(self, payload: dict) -> dict:
-        raise NotImplementedError
-
-    
-
-""" This is the abstraction of the stron api and MTN MoMo api """
 
 class MTNMoMoException(Exception):
     def __init__(self, status_code: int, message: str):
@@ -77,6 +62,12 @@ class MTNMoMoException(Exception):
 
     def __str__(self):
         return "%s - %s" %(str(self.status_code), self.message)
+
+    
+class AirtelMoneyException(MTNMoMoException):
+    def __init__(self, status_code: int, message: str):
+        super.__init__(status_code, message)
+        
     
 
 class StronException(Exception):
@@ -88,8 +79,83 @@ class StronException(Exception):
     def __str__(self):
         return "Response Status Code: %d" %(self.status)
 
+        
+
+meter_api_classes = {}
+
+def register(cls):
+    """
+    This function registers all meter api classes so that the factory method can easily instantiate the meter api classes
+    """
+    meter_api_classes[cls.__name__.lower()] = cls
+    return cls
+
+class MeterApiInterface(metaclass=abc.ABCMeta):
     
-class MTNMoMo:
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, "buy_token") and callable(subclass.buy_token) or NotImplementedError)
+
+    @abc.abstractmethod
+    def buy_token(self, payload: dict) -> dict:
+        raise NotImplementedError
+
+
+class MeterApiFactoryInterface(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def create_api(self, type: str) -> MeterApiInterface:
+        raise NotImplementedError
+
+class MeterApiFactory(MeterApiFactoryInterface):
+    
+    @classmethod
+    def create_api(cls, company_name: str, *args, **kwargs) -> MeterApiInterface:
+        class_ = meter_api_classes.get(company_name.lower(), None)
+        if class_ is not None:
+            return class_(*args, **kwargs)
+        raise Exception("Meter API for %s has not been added yet." %(company_name))
+
+
+class MobileMoneyApiInterface(metaclass=abc.ABCMeta):
+    
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        return (hasattr(subclass, "request_to_pay") and callable(subclass.request_to_pay) or NotImplementedError)
+
+    @abc.abstractmethod
+    def request_to_pay(self, payload: dict):
+        raise NotImplementedError
+
+
+class MobileMoneyApiFactoryInterface(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def create_api(self, type: str) -> MeterApiInterface:
+        raise NotImplementedError
+
+class MobileMoneyApiFactory(MeterApiFactoryInterface):
+
+    @classmethod
+    def create_api(self, type_: str, *args, **kwargs) -> MobileMoneyApiInterface:
+        if type_.lower() == "airtel":
+            return AirtelMoney(*args, **kwargs)
+        elif type_.lower() == "mtn":
+            return MTNMoMo(*args, **kwargs)
+        else:
+            return None
+
+        
+class AirtelMoney(MobileMoneyApiInterface):
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def request_to_pay(self, payload):
+        raise NotImplementedError
+    
+    
+class MTNMoMo(MobileMoneyApiInterface):
     # Only using the collection service
     BASE_URL = "https://sandbox.momodeveloper.mtn.com/collection"
     # These are descriptions of the error codes returned as shown in the mtnmomo documentation: https://momodeveloper.mtn.com/api-documentation/common-error/
@@ -223,8 +289,9 @@ class MTNMoMo:
         bytes_str = s.encode("ascii")
         return base64.b64encode(bytes_str).decode("ascii") 
 
-
-class StronPower(ManufacturerAPIInterface):
+    
+@register
+class StronPower(MeterApiInterface):
 
     BASE_URL = "http://www.server-api.stronpower.com/api"
     
