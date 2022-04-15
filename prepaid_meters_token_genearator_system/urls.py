@@ -22,4 +22,5 @@ urlpatterns = [
     path("", auth_views.LoginView.as_view(template_name="user/login.html.development"), name="home"),
     url(r'^admin/', admin.site.urls),
     path("users/", include("user.urls")),
+    path("transactions/", include("transaction.urls")),
 ]
