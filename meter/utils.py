@@ -1,5 +1,5 @@
 # These are simple functions that will come in handy in different apps
-from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
+from user.acc_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
 
 def is_admin(user):
     if user.is_authenticated:
