@@ -22,6 +22,11 @@ class TokenHistory(models.Model):
     name = models.CharField("Purchaser's Name", max_length=255, null=True)
     user = models.ForeignKey(get_user_model(), null=True, on_delete=models.PROTECT)
     token_no = models.PositiveIntegerField(unique=True)
+    phone_no = models.CharField(max_length=10)
+    # Amount of money paid
+    amount_paid = models.CharField(max_length=255)
+    # How many token units purchased
+    num_token_units = models.CharField(max_length=255)
     # Automatically populate with the current date and time 
     purchased_at = models.DateTimeField(auto_now_add=True)
     # Meter for which token was generated
