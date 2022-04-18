@@ -15,6 +15,7 @@ from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin
 from meter.api import SMS
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
+from user.utils import allow_or_deny_action
 # Create your views here.
 
 User = get_user_model()
@@ -29,15 +30,16 @@ def list_users(request):
         
     elif user_type == ADMIN:
         # List only manager accounts
-        users = User.objects.filter(Q(acc_type=MANAGER))
+        users = User.objects.filter(Q(acc_type=MANAGER) | Q(acc_type=ADMIN))
         
     return render(request, "user/list_accounts.html.development", {"users": users})
     
 
 @user_passes_test(is_admin_or_super_admin)
 def edit_user(request, pk):
-    # GET request
     user = get_object_or_404(User, pk=pk)
+    # Prevent admins from deleting fellow admins and super admins and likewise prevent super admins from editing fellow super admins
+    allow_or_deny_action(request.user.acc_type, user)
     if request.method == "POST":
         # process form and save updated fields
         edit_user_form = EditUserForm(request.POST, user=user)
@@ -59,9 +61,12 @@ def edit_user(request, pk):
 @user_passes_test(is_admin_or_super_admin)
 def create_user(request):
     user_type = request.user.acc_type
-    designation = "Manager"
+    designation = "Manager" # A designation that will used in the flash messages when a user is created; by de
+    # default I have set it to manager
+
     if request.method == "POST":
-        # Process the form and create user
+        # Admins can only create manger accounts and super admins can create admins and managers
+        # Thats the reason for two different forms
         if user_type == SUPER_ADMIN:
             create_user_form = SuperAdminCreateUserForm(request.POST)
         elif user_type == ADMIN:
@@ -70,15 +75,17 @@ def create_user(request):
         if create_user_form.is_valid():
             user = create_user_form.save()
             if user.acc_type == ADMIN:
-                designation = "Admin"
+                designation = "Admin" # The account created is for an admin, change the designation
+                
             # render the form with a success flash message attached
             messages.success(request, "%s: %s %s has been created successfully." %(designation, user.first_name, user.last_name))
             
-        # Rerender the form 
+        # Rerender the form and display any errors if any 
         return render(request, 'user/create_user.html.development', {"form": create_user_form})
 
     else:
-        # Render the AdminCreateUserForm or the SuperAdminCreateUserForm depending on the account type
+        # This is a GET request
+        # Render the AdminCreateUserForm or the SuperAdminCreateUserForm depending on the account type of the logged in user
         if user_type == SUPER_ADMIN:
             return render(request, 'user/create_user.html.development' ,{"form": SuperAdminCreateUserForm()})
         elif user_type == ADMIN:
@@ -87,7 +94,14 @@ def create_user(request):
 
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
+    """ Revoking a password doesnot require an active session and it is specifically limitted to  admins and super admins 
+    
+    """
     user = get_object_or_404(User, pk=pk)
+    # Donot allow admins to revoke super admin and fellow admin accounts passwords and likewise stop super admins from revoking
+    # passwords of fellow super admins
+    allow_or_deny_action(request.user.acc_type, user)
+    # This will be used to give an informative message of what account has been deleted
     full_name = "%s %s" %(user.first_name, user.last_name)
     if request.method == "POST":
         form = RevokePasswordForm(request.POST, user=user)
@@ -102,6 +116,8 @@ def revoke_password(request, pk):
 @user_passes_test(is_admin_or_super_admin)
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
+    # Prevent admins from deleting super admin and fellow admin accounts and likewise super admins from deleting fellow super admin accounts
+    allow_or_deny_action(request.user.acc_type, user)
     # Delete user 
     user.delete()
     full_name = "%s %s" %(user.first_name, user.last_name)
