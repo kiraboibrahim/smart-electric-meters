@@ -138,7 +138,7 @@ class RevokePasswordForm(forms.Form):
             return password
 
     def revoke_password(self):
-        self.user.set_password(self.cleaned_data["password"])
+        self.user.set_password(self.cleaned_data["new_password"])
         self.user.save(update_fields=["password"])
         return self.user
         

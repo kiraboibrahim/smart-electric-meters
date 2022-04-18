@@ -6,7 +6,7 @@ from user.utils import HashIdConverter
 register_converter(HashIdConverter, "hashid")
 
 urlpatterns = [
-    path("", list_users, name="list-users"),
+    path("", list_users, name="list_users"),
     path("login", auth_views.LoginView.as_view(template_name="user/login.html.development"), name="login"),
     path("logout", auth_views.LogoutView.as_view(template_name="user/logout.html.development"), name="logout"),
     path("create", create_user, name="create_user"),
