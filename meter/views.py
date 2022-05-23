@@ -76,5 +76,10 @@ def buy_token(request, pk):
     return HttpResponse(response %("generate token"))
 
 def unlink_meter(request, pk):
-    pass
+    meter = get_object_or_404(Meter, pk=pk)
+    # Unlink the meter from the manager it was assigned
+    meter.manager = None
+    meter.save()
+    messages.success(request, "Meter %s has been unlinked successfully" %(meter.meter_no))
+    return redirect("list_meters")
 
