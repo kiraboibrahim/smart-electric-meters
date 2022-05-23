@@ -12,7 +12,12 @@ from django.db.models import Q
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
-from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin
+from django.views.generic.list import ListView
+from django.views.generic.edit import CreateView, UpdateView
+from django.contrib.messages.views import SuccessMessageMixin
+from django.urls import reverse_lazy
+
+from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
 from meter.api import SMS
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
@@ -21,91 +26,85 @@ from user.utils import is_action_allowed
 
 User = get_user_model()
 
-@user_passes_test(is_admin_or_super_admin)
-def list_users(request):
-    user_type = request.user.acc_type
-    users = None
-    if user_type == SUPER_ADMIN:
-        # List admin and  manger accounts
-        users = User.objects.filter(Q(acc_type=MANAGER) | Q(acc_type=ADMIN))
+
+class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
+    template_name = "user/list_accounts.html.development"
+    context_object_name = "users"
+
+    def get_queryset(self):
+        user_type = self.request.user.acc_type
+        if user_type == SUPER_ADMIN:
+            return User.objects.filter(Q(acc_type=MANAGER) | Q(acc_type=ADMIN))
+        else:
+            return User.objects.filter(Q(acc_type=MANAGER))
         
-    elif user_type == ADMIN:
-        # List only manager accounts
-        users = User.objects.filter(Q(acc_type=MANAGER))
-        
-    return render(request, "user/list_accounts.html.development", {"users": users})
+
+class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    template_name = "user/create_user.html.development"
+    model = User
+    success_message = "%(designation)s: %(first_name)s %(last_name)s has been registered successfully"
+    success_url = reverse_lazy("create_user")
+
+    def get_form_class(self):
+        """ 
+        Admins and Super Admins have different privileges in account creation.
+        Admins can create managers only and while super admins can create both admins and managers.
+        The above privileges have been discerned with the use of different forms.
+        """
+        if self.request.user.acc_type == SUPER_ADMIN:
+            return SuperAdminCreateUserForm
+        else:
+            return AdminCreateUserForm
+
+    def get_success_message(self, cleaned_data):
+        # Make the meter number accessible in the success_message
+        designation = "Manager"
+        if cleaned_data["acc_type"] == ADMIN:
+            designation = "Administrator"
+        return self.success_message % dict(
+            cleaned_data,
+            meter_no=self.object.meter_no,
+            designation=designation
+        )
+    
     
 
-@user_passes_test(is_admin_or_super_admin)
-def edit_user(request, pk):
-    user = get_object_or_404(User, pk=pk)
-    # Prevent admins from deleting fellow admins and super admins and likewise prevent super admins from editing fellow super admins
-    if not is_action_allowed(request.user.acc_type, user):
-        raise PermissionDenied
-    
-    if request.method == "POST":
-        # process form and save updated fields
-        edit_user_form = EditUserForm(request.POST, user=user)
-        if edit_user_form.is_valid():
-            edit_user_form.update() # Save the updated fields
-            messages.success(request, "Changes saved successfully.")
-        return render(request, "user/edit_user.html.development", {"form": edit_user_form})
-    else:
-        initial = {
-            "first_name" : user.first_name,
-            "last_name": user.last_name,
-            "email": user.email,
-            "phone_no": user.phone_no,
-            "address": user.address,
-        }
-        edit_user_form = EditUserForm(initial=initial)
-        return render(request, "user/edit_user.html.development", {"form": edit_user_form}) 
+class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = User
+    template_name = "user/edit_user.html.development"
+    form_class = EditUserForm
+    success_message = "Changes saved successfully"
 
-@user_passes_test(is_admin_or_super_admin)
-def create_user(request):
-    user_type = request.user.acc_type
-    designation = "Manager" # A designation that will used in the flash messages when a user is created; by de
-    # default I have set it to manager
+    def get_success_url(self):
+        return reverse_lazy("edit_user", kwargs={"pk": self.object.id})
 
-    if request.method == "POST":
-        # Admins can only create manger accounts and super admins can create admins and managers
-        # Thats the reason for two different forms
-        if user_type == SUPER_ADMIN:
-            create_user_form = SuperAdminCreateUserForm(request.POST)
-        elif user_type == ADMIN:
-            create_user_form = AdminCreateUserForm(request.POST)
-
-        if create_user_form.is_valid():
-            user = create_user_form.save()
-            if user.acc_type == ADMIN:
-                designation = "Admin" # The account created is for an admin, change the designation
-                
-            # render the form with a success flash message attached
-            messages.success(request, "%s: %s %s has been created successfully." %(designation, user.first_name, user.last_name))
-            
-        # Rerender the form and display any errors if any 
-        return render(request, 'user/create_user.html.development', {"form": create_user_form})
-
-    else:
-        # This is a GET request
-        # Render the AdminCreateUserForm or the SuperAdminCreateUserForm depending on the account type of the logged in user
-        if user_type == SUPER_ADMIN:
-            return render(request, 'user/create_user.html.development' ,{"form": SuperAdminCreateUserForm()})
-        elif user_type == ADMIN:
-            return render(request, 'user/create_user.html.development', {"form": AdminCreateUserForm()})
-
+    def post(self, request, *args, **kwargs):
+        
+        user = self.get_object() # The user being edited
+        """
+        Prevent admins from deleting fellow admins and super admins and likewise,
+        prevent super admins from editing fellow super admins
+        """
+        if not is_action_allowed(request.user.acc_type, user):
+            raise PermissionDenied
+        
+        return super(UserEditView, self).post(request, *args, **kwargs)
 
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
-    """ Revoking a password doesnot require an active session and it is specifically limitted to  admins and super admins 
-    
+    """ 
+    Revoking a password requires active sessions of admins and super admins 
     """
+    
     user = get_object_or_404(User, pk=pk)
-    # Donot allow admins to revoke super admin and fellow admin accounts passwords and likewise stop super admins from revoking
-    # passwords of fellow super admins
+    """
+    Donot allow admins to revoke super admin and fellow admin accounts passwords and likewise stop super 
+    admins from revoking passwords of fellow super admins
+    """
     if not is_action_allowed(request.user.acc_type, user):
         raise PermissionDenied
-    # This will be used to give an informative message of what account has been deleted
+    
+    # Name of account whose password will be revoked
     full_name = "%s %s" %(user.first_name, user.last_name)
     if request.method == "POST":
         form = RevokePasswordForm(request.POST, user=user)
@@ -140,12 +139,14 @@ def reset_password(request):
             try:
                 user = User.objects.get(phone_no=phone_no)
             except:
+                # Donot report non existent users, Can be used by hackers to brute force usernames
                 pass
             
             if user is not None:
                 token = default_token_generator.make_token(user)
                 uidb64 = urlsafe_base64_encode(force_bytes(user.id))
 
+                # Context for the reset password sms 
                 c = {
                     "site_name": "LEGIT SYSTEMS",
                     "protocol": "http",

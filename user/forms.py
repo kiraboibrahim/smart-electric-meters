@@ -27,21 +27,12 @@ class CreateUserBaseForm(ModelForm):
         return password
 
     def save(self):
-        first_name = self.cleaned_data["first_name"]
-        last_name = self.cleaned_data["last_name"]
-        phone_no = self.cleaned_data["phone_no"]
-        email = self.cleaned_data["email"]
-        password = self.cleaned_data["password"]
-        address = self.cleaned_data["address"]
-        acc_type = int(self.cleaned_data["acc_type"]) # Convert to Integer
-
-        user = None
+        acc_type = self.cleaned_data["acc_type"]
+        del self.cleaned_data["password2"] # Not required for user creation
         if acc_type == ADMIN:
-            user = User.objects.create_admin(phone_no, first_name, last_name, address, password=password, email=email)
-        elif acc_type == MANAGER:
-            user = User.objects.create_manager(phone_no, first_name, last_name, address, password=password, email=email)
-
-        return user
+            return User.objects.create_admin(**self.cleaned_data)
+        else:
+            return User.objects.create_manager(**self.cleaned_data)
 
 
     def __init__(self, *args, **kwargs):
@@ -53,11 +44,14 @@ class CreateUserBaseForm(ModelForm):
 
 class AdminCreateUserForm(CreateUserBaseForm):
     
-    acc_type = forms.ChoiceField(label="Account Type", choices=admin_acc_choices)
+    acc_type = forms.ChoiceField(label="Account type", choices=admin_acc_choices)
     
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
+        labels = {
+             "phone_no": "Phone number"
+         }
 
 
 super_admin_acc_choices = (
@@ -67,63 +61,27 @@ super_admin_acc_choices = (
 
 # The super admin can create admins and managers, Use super admin account choices
 class SuperAdminCreateUserForm(CreateUserBaseForm):
-    acc_type = forms.ChoiceField(label="Account Type", choices=super_admin_acc_choices)
+    acc_type = forms.ChoiceField(label="Account type", choices=super_admin_acc_choices)
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
 
 
 
-class EditUserForm(forms.Form):
-    first_name = forms.CharField(max_length=255)
-    last_name = forms.CharField(max_length=255)
-    email = forms.EmailField(required=False)
-    phone_no = forms.CharField(max_length=10)
-    address = forms.CharField(max_length=255)
+class EditUserForm(ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+
         
-    def clean_email(self):
-        return self._clean("email")
+    class Meta:
+        model = User
+        labels = {
+            "phone_no": "Phone number"
+        }
+        fields = ["first_name", "last_name", "email", "phone_no", "address"]
 
-
-    def clean_phone_no(self):
-        return self._clean("phone_no")
-        
-    def _clean(self, field_name):
-        new_field_value = self.cleaned_data[field_name]
-        original_field_value = getattr(self.user, field_name, None)
-        if new_field_value and new_field_value != original_field_value:
-            # Field has been changed
-            try:
-                User.objects.get(Q(**{field_name:new_field_value}) & ~Q(id=self.user.id))
-            except User.DoesNotExist:
-                return new_field_value
-            raise forms.ValidationError("Duplicate values are not allowed")
-        
-        return original_field_value
-        
-    def update(self):
-        update_fields = []
-        if self.user.first_name != self.cleaned_data["first_name"]:
-            self.user.first_name = self.cleaned_data["first_name"]
-
-        if self.user.last_name != self.cleaned_data["last_name"]:
-            self.user.last_name = self.cleaned_data["last_name"]
-
-        if self.user.phone_no != self.cleaned_data["phone_no"]:
-            self.user.phone_no = self.cleaned_data["phone_no"]
-
-        if self.user.address != self.cleaned_data["address"]:
-            self.user.address = self.cleaned_data["address"]
-
-        if self.user.email != self.cleaned_data["email"]:
-            self.user.email = self.cleaned_data["email"]
-
-        self.user.save()
-        return self.user
 
 class RevokePasswordForm(forms.Form):
     new_password = PasswordField(label="New password")

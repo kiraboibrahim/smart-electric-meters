@@ -1,52 +1,80 @@
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from .utils import is_admin, is_super_admin, is_admin_or_super_admin
-from .models import Meter
-from .forms import CreateMeterForm
+from django.views.generic.list import ListView
+from django.views.generic.edit import CreateView, UpdateView
+from django.contrib.messages.views import SuccessMessageMixin
+from django.urls import reverse_lazy
+
+from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
+from meter.models import MeterCategory, Meter
+
 
 # Create your views here.
-
-response = "<h1>Hello from %s route</h1>"
 User = get_user_model()
-# List all meters
-@user_passes_test(is_admin_or_super_admin)
-def list_meters(request):
-    return HttpResponse(response %("list meters"))
 
-#@user_passes_test(is_admin_or_super_admin)
-def create_meter(request):
-    context = {}
+
+class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
+    template_name = "meter/list_meters.html.development"
+    context_object_name = "meters"
+    model = Meter
+
     
-    if request.method == 'POST':
-        form = CreateMeterForm(request.POST)
-        if form.is_valid():
-            context["form"] = form
-            #form.save()
-            # Meter added successfully
-            messages.success(request, "Meter: %s has been added successfully." %(form.cleaned_data.get("meter_no")))
-        else:
-            # Form is invalid
-            messages.error(request, "Fix errors in the form.")
-    else:
-        form = CreateMeterForm()
-        context["form"] = form
-        
-    return render(request, "meter/create_meter.html.development", context)
+class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Meter
+    template_name = "meter/create_meter.html.development"
+    fields = "__all__"
+    success_url = reverse_lazy("register_meter")
+    success_message = "Meter: %(meter_no)s registered successfully."
+    
+    def get_success_message(self, cleaned_data):
+        # Make the meter number accessible in the success_message
+        return self.success_message % dict(
+            cleaned_data,
+            meter_no=self.object.meter_no,
+        )
+    
+    """ TODO: Initialize manager field with only managers """
+    """ TODO: Register remotely with the company manufacturer API """
+    
 
-@user_passes_test(is_admin_or_super_admin)
-def edit_meter(request, pk):
-    # Edit meter no, manufacture and manufacturer, and Owner
-    return HttpResponse(response %("edit meter"))
+    
+class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Meter
+    template_name = "meter/edit_meter.html.development"
+    fields = "__all__"
+    success_message = "Changes saved successfully."
 
+    def get_success_url(self):
+        url = reverse_lazy("edit_meter", kwarrgs={"pk":self.object.id})
+        return url
+    
+class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    model = MeterCategory
+    template_name = "meter/register_meter_category.html.development"
+    fields = "__all__"
+    success_url = reverse_lazy("register_meter_category") # change this
+    success_message = "Meter Category: %(label)s registered successfully."
+    
+    def get_success_message(self, cleaned_data):
+        # Make the meter number accessible in the success_message
+        return self.success_message % dict(
+            cleaned_data
+        ) 
+    
 @user_passes_test(is_admin_or_super_admin)
 def delete_meter(request, pk):
-    # This is a dangerous view, I myself I don't see the reason why a company would want to delete a meter that is
-    # already in production, but anyway, It was specified in the app expected features, So just go on 
-    return HttpResponse(response %("delete meter"))
+    meter = get_object_or_404(Meter, pk=pk)
+    meter.delete()
+    messages.success(request, "Meter: %s has been deleted successfully." %(meter.meter_no))
+    return redirect("list_meters")
 
-def get_token(request, pk):
+def buy_token(request, pk):
     # This view will not require authentication
     return HttpResponse(response %("generate token"))
+
+def unlink_meter(request, pk):
+    pass
+
