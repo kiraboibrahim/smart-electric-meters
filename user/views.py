@@ -22,10 +22,19 @@ from meter.api import SMS
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
 from user.utils import is_action_allowed
+from user.models import PricePerUnit
+
 # Create your views here.
 
 User = get_user_model()
 
+
+class PricePerUnitCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    model = PricePerUnit
+    template_name = "user/register_price_per_unit.html.development"
+    fields = "__all__"
+    success_url = reverse_lazy("set_price_per_unit")
+    success_message = "Price registered successfully."
 
 class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
     template_name = "user/list_accounts.html.development"
