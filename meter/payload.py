@@ -5,6 +5,8 @@
 # required entity.                                                                                             #
 ################################################################################################################
 
+from user.models import PricePerUnit
+from django.shortcuts import get_object_or_404
 
 class Payload:
     pass
@@ -16,7 +18,7 @@ class NewCustomer(Payload):
         
         # Meter Information
         self.meter_no = meter.meter_no
-        self.price_category = meter.manager.priceperunit_set.first().label
+        self.price_category = get_object_or_404(PricePerUnit, manager=meter.manager).label
         
         # Manager Information
         self.pk = meter.manager.id # Our primary key for manager
