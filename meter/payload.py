@@ -16,7 +16,7 @@ class NewCustomer(Payload):
         
         # Meter Information
         self.meter_no = meter.meter_no
-        self.price_category = meter.manger.priceperunit_set.first().label
+        self.price_category = meter.manager.priceperunit_set.first().label
         
         # Manager Information
         self.pk = meter.manager.id # Our primary key for manager
