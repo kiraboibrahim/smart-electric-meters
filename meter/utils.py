@@ -37,3 +37,8 @@ class AdminOrSuperAdminRequiredMixin(object):
     @method_decorator(user_passes_test(is_admin_or_super_admin))
     def dispatch(self, *args, **kwargs):
         return super(AdminOrSuperAdminRequiredMixin, self).dispatch(*args, **kwargs)
+
+
+def meter_manufacturer_hash(meter_manufacturer):
+    return meter_manufacturer.title().strip().replace(" ", "")
+    
