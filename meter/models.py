@@ -17,7 +17,7 @@ class MeterCategory(models.Model):
 
 class Manufacturer(models.Model):
     # The name of the manufacturer is strongly coupled to api classes in the api.py, so developers and admins
-    # collaborate
+    # have to communicate
     name = models.CharField("Manufacturer's Name", max_length=255)
 
     def __str__(self):
