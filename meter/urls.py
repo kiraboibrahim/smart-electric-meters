@@ -11,6 +11,7 @@ urlpatterns = [
     path("<hashid:pk>/edit", MeterEditView.as_view(), name="edit_meter"),
     path("register", MeterCreateView.as_view(), name="register_meter"),
     path("<hashid:pk>/delete", delete_meter, name="delete_meter"),
-    path("<hashid:pk>/buy_token", buy_token, name="buy_token"),
+    path("buy_token", buy_token, name="buy_token"),
+    path("<hashid:pk>/buy_token", buy_token, name="meter_buy_token"),
     path("<hashid:pk>/unlink", unlink_meter, name="unlink_meter"),
 ]
