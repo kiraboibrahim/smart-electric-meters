@@ -3,6 +3,9 @@ from django.core.validators import MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
+from user.acc_types import MANAGER
+
+User = get_user_model()
 # Create your models here.
 
 
@@ -28,7 +31,7 @@ class Meter(models.Model):
     meter_no = models.CharField("Meter Number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.PROTECT)
     # If a manager is deleted, the meter owner will be set NULL ie disowning all from the manager
-    manager = models.ForeignKey(get_user_model(), models.SET_NULL, null=True, blank=True)
+    manager = models.ForeignKey(User, models.SET_NULL, null=True, blank=True, limit_choices_to={"acc_type": MANAGER})
     # Prevent deletion of meter types if there are still child rows referencing it
     meter_category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT)
         
@@ -42,7 +45,7 @@ class TokenHistory(models.Model):
     # From the decision reached, the name field is not necessary, and thus it is allowed to have NULL values
     name = models.CharField("Purchaser's Name", max_length=255, null=True)
     # When a user who bought a token is deleted from the database, then all child rows in this table will be set to NULL
-    user = models.ForeignKey(get_user_model(), models.SET_NULL, null=True)
+    user = models.ForeignKey(User, models.SET_NULL, null=True)
     token_no = models.PositiveIntegerField(unique=True)
     phone_no = models.CharField(max_length=10)
     # Amount of money paid
