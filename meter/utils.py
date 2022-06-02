@@ -39,6 +39,6 @@ class AdminOrSuperAdminRequiredMixin(object):
         return super(AdminOrSuperAdminRequiredMixin, self).dispatch(*args, **kwargs)
 
 
-def meter_manufacturer_hash(meter_manufacturer):
+def create_meter_manufacturer_hash(meter_manufacturer):
     return meter_manufacturer.title().strip().replace(" ", "")
     

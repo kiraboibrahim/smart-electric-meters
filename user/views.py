@@ -35,6 +35,7 @@ class PricePerUnitCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin
     fields = "__all__"
     success_url = reverse_lazy("set_price_per_unit")
     success_message = "Price registered successfully."
+    
 
 class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
     template_name = "user/list_accounts.html.development"

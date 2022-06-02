@@ -9,10 +9,10 @@ import uuid
 
 from django.conf import settings
 
-from meter.payload import NewCustomer, VendingMeter, RequestToPay, NewPrice
+from meter.utils import create_meter_manufacturer_hash
 
         
-class MTNMoMoException(Exception):
+class MTNMobileMoneyException(Exception):
     def __init__(self, status_code: int, message: str):
         self.status_code = status_code # Status code returned by MTNMoMo api
         self.message = message  # A description message attached to elucidate the status code
@@ -22,7 +22,7 @@ class MTNMoMoException(Exception):
         return "%s - %s" %(str(self.status_code), self.message)
 
     
-class AirtelMoneyException(MTNMoMoException):
+class AirtelMoneyException(MTNMobileMoneyException):
     def __init__(self, status_code: int, message: str):
         super.__init__(status_code, message)
         
@@ -30,12 +30,12 @@ class AirtelMoneyException(MTNMoMoException):
 
 class StronPowerException(Exception):
     def __init__(self, status_code: int, message: str = ""):
-        self.message = message
         self.status_code = status_code
+        self.message = message
         super().__init__(self.message)
 
     def __str__(self):
-        return "Response Status Code: %d" %(self.status)
+        return "%d: %s" %(self.status_code, self.message)
 
         
 
@@ -45,89 +45,94 @@ def register(cls):
     """
     This function registers all meter api classes so that the factory method can easily instantiate the meter api classes
     """
-    meter_api_classes[cls.__name__.title().strip().replace(" ", "")] = cls
+    meter_manufacturer_hash = create_meter_manufacturer_hash(cls.__name__)
+    meter_api_classes[meter_manufacturer_hash] = cls
     return cls
 
 
-class MeterApiInterface(abc.ABC):
+class MeterAPI(abc.ABC):
 
     @abc.abstractmethod
-    def get_token(self, payload: VendingMeter):
+    def get_token(self, payload):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_meter_customer(self, payload: NewCustomer):
+    def register_meter_customer(self, payload):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_price_category(self, payload: NewPrice):
+    def register_price_category(self, payload):
         raise NotImplementedError
     
 
-class MeterApiFactoryInterface(abc.ABC):
+class MeterAPIFactory(abc.ABC):
 
     @abc.abstractmethod
-    def create_api(self, type: str) -> MeterApiInterface:
+    def create_api(self, api_name: str):
         raise NotImplementedError
 
 
-class MeterApiFactory(MeterApiFactoryInterface):
+class MeterAPIFactoryImpl(MeterAPIFactory):
     
     @classmethod
-    def create_api(cls, company_name: str) -> MeterApiInterface:
-        class_ = meter_api_classes.get(company_name.title().strip().replace(" ", ""), None)
-        if class_ is not None:
-            return class_()
+    def create_api(cls, company_name: str):
+        meter_api_class = meter_api_classes.get(create_meter_manufacturer_hash(company_name), None)
+        if meter_api_class is not None:
+            return meter_api_class()
         raise Exception("Meter API for %s has not been added yet." %(company_name))
 
-
-class MobileMoneyApiInterface(abc.ABC):
     
-    @abc.abstractmethod
-    def request_to_pay(self, payload: RequestToPay):
-        raise NotImplementedError
-
-    @abc.abstractmethod
-    def request_transaction_status(self, ref):
-        raise NotImplementedError
-
     
-class MobileMoneyApiFactoryInterface(abc.ABC):
+class MobileMoneyAPIFactory(abc.ABC):
 
     @abc.abstractmethod
-    def create_api(self, service_provider: str) -> MeterApiInterface:
+    def create_api(self, api_name: str):
         raise NotImplementedError
     
 
-class MobileMoneyApiFactory(MeterApiFactoryInterface):
+class MobileMoneyAPI(abc.ABC):
+    
+    @abc.abstractmethod
+    def debit_funds(self, payload):
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_transaction_state(self, transaction_reference):
+        raise NotImplementedError
+
+
+class MobileMoneyAPIFactoryImpl(MeterAPIFactory):
 
     @classmethod
-    def create_api(self, service_provider: str) -> MobileMoneyApiInterface:
-        if service_provider.lower() == "airtel":
+    def create_api(self, api_name: str):
+        if api_name.lower() == "airtel":
             return AirtelMoney()
-        elif service_provider.lower() == "mtn":
-            return MTNMoMo()
+        elif api_name.lower() == "mtn":
+            return MTNMobileMoney()
         else:
             return None
 
         
-class AirtelMoney(MobileMoneyApiInterface):
+class AirtelMoney(MobileMoneyAPI):
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
         pass
 
-    def request_to_pay(self, *args, **kwargs):
+    def debit_funds(self, payload):
         raise NotImplementedError
 
-    def request_transaction_status(self, *args, **kwargs):
+    def get_transaction_state(self, transaction_reference):
         raise NotImplementedError
     
     
-class MTNMoMo(MobileMoneyApiInterface):
-    # Only using the collection service
+class MTNMobileMoney(MobileMoneyAPI):
+    # The collection service endpoint
     BASE_URL = "https://sandbox.momodeveloper.mtn.com/collection"
-    # These are descriptions of the error codes returned as shown in the mtnmomo documentation: https://momodeveloper.mtn.com/api-documentation/common-error/
-    # The error codes below are all in the generic context except for the 500 error code which is interpreted in the requesttopay context (I am only using requesttopay, no need to bother with generic context though it may apply in certain scenarios)
+    # These are descriptions of the error codes returned as shown in the mtnmomo documentation:
+    # https://momodeveloper.mtn.com/api-documentation/common-error/
+    # The error codes below are all in the generic context except for the 500 error code which
+    # is interpreted in the requesttopay endpoint context (I am only using requesttopay, no need to bother
+    # with generic context though it may apply in certain scenarios)
     
     ERRORS   = {
         409 : "Duplicated Reference Id. Cannot create new resource.",
@@ -138,7 +143,7 @@ class MTNMoMo(MobileMoneyApiInterface):
         500 : "Payer not found. Account holder not registered. or Payee cannot recieve funds due to... ie transfer limit exceeded or Internal Server Error.",
         503 : "Service temporarily unavailable. please try again later."
     }
-
+    
     TRANSACTION_STATES = {
         "PENDING" : 1,
         "SUCCESSFUL": 2,
@@ -146,116 +151,87 @@ class MTNMoMo(MobileMoneyApiInterface):
     }
 
     def __init__(self):
+
         self.subscription_key = settings.MTN_SUBSCRIPTION_KEY
         self.api_user = settings.MTN_API_USER
         self.api_key = settings.MTN_API_KEY
         self.bearer_auth_token_filename = "token.json"
         self.bearer_auth_token = self.load_bearer_auth_token()
-        self.basic_auth_token = self.create_basic_auth_token()
-        self.env = "sandbox"
-        if not settings.DEBUG:
-            self.env = "live"
-        self.headers = {
-            "X-Target-Environment" : self.env,
+        self.basic_auth_token = self.get_basic_auth_token()
+        self.environment = "sandbox" if settings.DEBUG else "live"
+        self.base_http_headers = {
+            "X-Target-Environment" : self.environment,
             "Ocp-Apim-Subscription-Key" : self.subscription_key,
             "Authorization": "Basic %s" %(self.basic_auth_token), # Default authentication set to Basic
         }
 
-    def request_to_pay(self, payload: RequestToPay) -> str:
+    def debit_funds(self, payload):
+        transaction_reference = payload.transaction_reference
+        payload = self.create_debit_funds_payload(payload)
         
-        """
-        Request payments from the clients mobile wallet, thet are prompted for the mobile money pin
-        """
-        ref = payload.ref
-        payload = {
+        bearer_auth_token =  self.get_bearer_auth_token()
+        http_headers = self.base_http_headers.copy()
+        authorization_header_value = "Bearer %s" %(bearer_auth_token["access_token"])
+        http_headers = self.add_to_http_headers(http_headers, "Authorization", authorization_header_value)
+        http_headers = self.add_to_http_headers(http_headers, "X-Reference-Id", transaction_reference)
 
-            "amount": str(payload.amount),
-            "currency": "EUR",
-            "externalId": payload.external_id,
-            "payer": {
-                "partyIdType": "MSISDN",
-                "partyId": payload.phone_no
-            },
-            "payerMessage": "Buying token.",
-            "payeeNote": "Buying token."
-        }
-        
-        self.request_bearer_auth_token() # This method modifies the headers attribute, call it before copying the headers
-        self.headers["Authorization"] = "Bearer %s" %(self.bearer_auth_token["access_token"])
-        headers = self.headers.copy() # Make a copy of the base headers and just extend from
-        headers["X-Reference-Id"] = ref
-
-        response = requests.post("%s/v1_0/requesttopay" %(MTNMoMo.BASE_URL), headers=headers, json=payload)
-        if response.status_code != 202:
-            self.raise_exception(response)
-
-        return ref # Use the reference_id for querying about the status of the transaction
-        
-    def request_transaction_status(self, ref: str) -> int:
-        """
-        Status of a transaction can be:
-
-        State        Mask
-        =================
-        PENDING    |  1
-        SUCCESSFUL |  2
-        FAILED     |  4
-
-        """
-        response = requests.get("%s/v1_0/requesttopay/%s" %(MTNMoMo.BASE_URL, ref), headers=self.headers)
-        # The authorization is header is optional for this endpoint though I am send it too
-        if response.status_code != 200:
-           self.raise_exception(response)
+        http_response = requests.post("%s/v1_0/requesttopay" %(self.__class__.BASE_URL), headers=http_headers, json=payload)
+        if http_response.status_code != 202:
+            self.raise_exception(http_response)
             
-        transaction_status = response.json()["status"]
+        return transaction_reference
         
-        return MTNMoMo.TRANSACTION_STATES[transaction_status]
+    def get_transaction_state(self, transaction_reference: str):
+        bearer_auth_token =  self.get_bearer_auth_token()
+        http_headers = self.base_http_headers.copy()
+        authorization_header_value = "Bearer %s" %(bearer_auth_token["access_token"])
+        http_headers = self.add_to_http_headers(http_headers, "Authorization", authorization_header_value)
+        http_response = requests.get("%s/v1_0/requesttopay/%s" %(self.__class__.BASE_URL, transaction_reference), headers=http_headers)
+        # The authorization is header is optional for this endpoint though I am send it too
+        if http_response.status_code != 200:
+           self.raise_exception(http_response)
+            
+        transaction_state = http_response.json()["status"]
+        
+        return self.__class__.TRANSACTION_STATES[transaction_state]
 
-    def request_bearer_auth_token(self):
-        """
-        Request for token that can be used for Bearer authorization, Remeber the token expires, 
-        so you have to request another one
+    def get_bearer_auth_token(self):
         
-        """
-        headers = self.headers.copy()
+        http_headers = self.base_http_headers.copy()
+        bearer_auth_token = self.bearer_auth_token
+        
         # Authorization used for this endpoint is Basic
-        headers["Authorization"] = "Basic %s" %(self.basic_auth_token)
+        http_headers["Authorization"] = "Basic %s" %(self.basic_auth_token)
 
         # X-target-Environment header not allowed for this endpoint 
-        del headers["X-Target-Environment"]
+        http_headers = self.delete_from_http_headers(http_headers, "X-Target-Environment")
 
         if self.is_bearer_auth_token_expired():
-            response = requests.post("%s/token/" %(MTNMoMo.BASE_URL), headers=headers)
-            if response.status_code != 200:
+            http_response = requests.post("%s/token/" %(self.__class__.BASE_URL), headers=http_headers)
+            if http_response.status_code != 200:
                 # An error has occured
-                self.raise_exception(response)            
+                self.raise_exception(http_response)            
 
-            bearer_auth_token = response.json()
-            self.bearer_auth_token["expires_at"] = int(bearer_auth_token["expires_in"]) + time.time()
-            self.bearer_auth_token["access_token"] = bearer_auth_token["access_token"]
-            self.dump_bearer_auth_token() # Save token to file
-        
-        return self.bearer_auth_token
+            bearer_auth_token = http_response.json()
+            # Save token to file
+            self.dump_bearer_auth_token()
+            
+        return bearer_auth_token
 
-    def raise_exception(self, response):
-        error_msg = "Unknown error!"
-        code = response.status_code
-        if len(response.text) != 0:
-            # In some cases, the server responds with helpful debugging info rather than the generic ones as defined in ERRORS variable
-            err_json = response.json()
-            raise MTNMoMoException(code, err_json["message"])
-        else:
-            raise MTNMoMoException(code, MTNMoMo.ERRORS.get(code, error_msg))
             
     def is_bearer_auth_token_expired(self) -> bool:
-        # True is returned for two cases: Token expiration and When the token has not yet been requested
+        """ 
+        True is returned for two cases:
+         1) Token expiration
+         2) and when the bearer auth token has not yet been requested from the API
+
+        """
+        
+        seconds_allowed_before_expiry = 30
         if self.bearer_auth_token:
-            # I am using 30 as offset below which the token is logically rendered expired because of
-            # the network latency, the token may become expired during the course of the request,
-            # 30 seconds may not be enough
-            if self.bearer_auth_token["expires_at"] - time.time() > 30:
-                return False
-            
+            seconds_remaining_before_expiry = self.bearer_auth_token["expires_at"] - time.time()
+            if  seconds_remaining_before_expiry > seconds_allowed_before_expiry:
+                return False 
         return True
         
     def dump_bearer_auth_token(self):
@@ -269,14 +245,58 @@ class MTNMoMo(MobileMoneyApiInterface):
                 bearer_auth_token = json.load(f)
         return bearer_auth_token
         
-    def create_basic_auth_token(self):
-        s = "%s:%s" %(self.api_user, self.api_key)
-        bytes_str = s.encode("ascii")
-        return base64.b64encode(bytes_str).decode("ascii") 
+    def get_basic_auth_token(self):
+        basic_auth_credentials = "%s:%s" %(self.api_user, self.api_key)
+        basic_auth_credentials_bytes = basic_auth_credentials.encode("ascii")
+        return base64.b64encode(basic_auth_credentials_bytes).decode("ascii")
 
     
+    def delete_from_http_headers(self, http_headers, http_header_key):
+        del http_headers[http_header_key]
+        return http_headers
+
+    def set_http_header(self, http_header_key, http_header_value):
+        self.headers[http_header_key] = http_header_value
+
+    def add_to_http_headers(self, http_headers, http_header_key, http_header_value):
+        http_headers[http_header_key] = http_header_value
+
+        return http_headers
+
+    def set_bearer_auth_token(self, bearer_auth_token):
+        self.bearer_auth_token["expires_at"] = int(bearer_auth_token["expires_in"]) + time.time()
+        self.bearer_auth_token["access_token"] = bearer_auth_token["access_token"]
+
+    def create_debit_funds_payload(self, payload):
+        payload = {
+
+            "amount": payload.amount_ugx,
+            "currency": "EUR",
+            "externalId": payload.transaction_id,
+            "payer": {
+                "partyIdType": "MSISDN",
+                "partyId": payload.phone_no
+            },
+            "payerMessage": "Purchasing electricity token.",
+            "payeeNote": "Purchasing electricity token."
+        }
+        return payload
+        
+
+    def raise_exception(self, http_response):
+        error_message = "Unknown error"
+        http_response_status_code = http_response.status_code
+        if len(http_response.text) != 0:
+            # In some cases, the server responds with a particular message detailing the cause of the error
+            error_message = http_response.json()["message"]
+
+        error_message = self.__class__.ERRORS.get(http_response_status_code, error_message)
+        raise MTNMobileMoneyException(http_response_status_code, error_message)
+    
+        
+    
 @register
-class StronPower(MeterApiInterface):
+class StronPower(MeterAPI):
 
     BASE_URL = "http://www.server-api.stronpower.com/api"
     
@@ -293,16 +313,17 @@ class StronPower(MeterApiInterface):
             "CompanyName": self.company_name,
         }
 
-    def register_meter_customer(self, payload: NewCustomer) -> bool:
+    def register_meter_customer(self, payload) -> bool:
+        random_customer_id = str(uuid.uuid4())
         payload = {
             
-            "AccountID": str(payload.account_id),
-            "CustomerID": str(uuid.uuid4()),
-            "CustomerName": payload.name,
-            "CustomerAddress": payload.address,
-            "CustomerPhone": payload.phone_no,
-            "CustomerEmail": payload.email,
-            "PriceCategories": payload.price_category,
+            "AccountID": str(payload.meter_owner_id),
+            "CustomerID": random_customer_id,
+            "CustomerName": payload.meter_owner_name,
+            "CustomerAddress": payload.meter_owner_address,
+            "CustomerPhone": payload.meter_owner_phone_no,
+            "CustomerEmail": payload.meter_owner_email,
+            "PriceCategories": payload.meter_price_category,
             "MeterID": payload.meter_no,
             "MeterType": 0
         }
@@ -318,7 +339,7 @@ class StronPower(MeterApiInterface):
         return False
         
 
-    def register_price_category(self, payload: NewPrice) -> bool:
+    def register_price_category(self, payload) -> bool:
 
         payload = {
     
@@ -341,12 +362,12 @@ class StronPower(MeterApiInterface):
         # it returns
         return False
             
-    def get_token(self, payload: VendingMeter) -> dict:
+    def get_token(self, payload) -> dict:
         payload = {
 
             "MeterID": payload.meter_no,
             "is_vend_by_unit": "false",
-            "Amount": payload.amount
+            "Amount": payload.amount_ugx
         }
         # Upadate with the username, password, and company name
         payload.update(self.payload)
@@ -355,7 +376,7 @@ class StronPower(MeterApiInterface):
         response = response.json()
         if response == []:
             # It is an empty response, some error have been triggered but the api doesnot give helpful info
-            return {}
+            self.raise_exception(400, "Bad request- No token received from meter API")
 
         return {
                  "token": response[0]["Token"],
