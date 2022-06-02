@@ -1,4 +1,4 @@
-from twilio.rest import Client # Messaging client
+from twilio.rest import Client
 import requests
 import base64
 import time
@@ -397,19 +397,46 @@ class StronPower(MeterAPI):
         return response
 
 
+class NotificationException(Exception):
 
-class SMS:
+    def __init__(self, message):
+        self.message = message
+        super(NotificationException, self).__init__(message)
 
-    """
-    Send messages with twilio sms api
-    """
-    def __init__(self, account_sid: str, auth_token: str, from_: str):
-        self.account_sid = account_sid
-        self.auth_token = auth_token
-        self.from_ = from_
-        self.client = Client(account_sid, auth_token)
+    def __str__(self):
+        return message
     
-    def send(self, to: str = "", body: str = "") -> int:
-        message = self.client.messages.create(body=body, from_=self.from_, to=to)
-        return message.sid
+    
+class Notification(abc.ABC):
 
+    @abc.abstractmethod
+    def send(self, source, destination, message):
+        raise NotImplementedError
+
+
+class NotificationClient(abc.ABC):
+
+    @abc.abstractmethod
+    def send(self, source, destination, message):
+        raise NotImplementedError
+
+
+class TwilioSMSClient(NotificationClient):
+
+    def __init__(self, account_sid, authentication_token):
+        self.account_sid = account_sid
+        self.authentication_token = authentication_token
+        self.client = Client(account_sid, authentication_token)
+
+    def send(self, source, destination, message):
+        message = self.client.messages.create(body=message, from_=source, to=destination)
+        return message
+    
+    
+class NotificationImpl(Notification):
+    
+    def __init__(self, client):
+        self.client = client
+        
+    def send(self, source, destination, message):
+        self.client.send(source, destination, message)

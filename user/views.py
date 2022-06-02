@@ -18,7 +18,7 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
-from meter.api import SMS
+from meter.api import NotificationImpl, TwilioSMSClient
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
 from user.utils import is_action_allowed
@@ -164,13 +164,16 @@ def reset_password(request):
                     "uid": uidb64,
                     "token": token,
                 }
-                message_body = render_to_string("user/reset_password_sms.txt.development", c)
+                message = render_to_string("user/reset_password_sms.txt.development", c)
                
                 # send the SMS with the password reset link
-
-                sms_client = SMS(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN, settings.TWILIO_PHONE_NO)
-                phone_no = "%s%s" %("+256", phone_no[1:])
-                sms_client.send(phone_no, message_body)
+                
+                sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+                source = settings.TWILIO_PHONE_NO
+                destination = "%s%s" %("+256", phone_no[1:])
+                notification = NotificationImpl(sms_client)
+                notification.send(source, destination, message)
+                
             messages.success(request, "SMS with password reset instructions has been sent.")
             return render(request, "user/reset_password.html.development", {"form": form})
 
