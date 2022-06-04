@@ -16,6 +16,7 @@ from django.views.generic.list import ListView
 from django.views.generic.edit import CreateView, UpdateView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
+from django.views import View
 
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
 from meter.api import NotificationImpl, TwilioSMSClient
@@ -139,49 +140,56 @@ def delete_user(request, pk):
     messages.success(request, "User: %s deleted successfully" %(full_name))
     return HttpResponseRedirect(reverse("list_users"))
 
-def reset_password(request):
-    if request.method == "POST":
-        form = ResetPasswordForm(request.POST)
-        user = None
-        
-        if form.is_valid():
-            phone_no = form.cleaned_data["phone_no"]
-            try:
-                user = User.objects.get(phone_no=phone_no)
-            except:
-                # Donot report non existent users, Can be used by hackers to brute force usernames
-                pass
-            
-            if user is not None:
-                token = default_token_generator.make_token(user)
-                uidb64 = urlsafe_base64_encode(force_bytes(user.id))
 
-                # Context for the reset password sms 
-                c = {
-                    "site_name": "LEGIT SYSTEMS",
-                    "protocol": "http",
-                    "domain": "localhost:8000",
-                    "uid": uidb64,
-                    "token": token,
-                }
-                message = render_to_string("user/reset_password_sms.txt.development", c)
-               
-                # send the SMS with the password reset link
+def send_sms(source, destination, message):
+    sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+    notification = NotificationImpl(sms_client)
+    notification.send(source, destination, message)
                 
-                sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+def get_context_for_password_reset(user):
+    token = default_token_generator.make_token(user)
+    uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+
+    # Context for the reset password sms 
+    context = {
+        "site_name": "LEGIT SYSTEMS",
+        "protocol": "http",
+        "domain": "localhost:8000",
+        "uid": uidb64,
+        "token": token,
+    }
+    return context
+
+
+
+class ResetPassword(View):
+
+    def get(self, *args, **kwargs):
+        reset_password_form = ResetPasswordForm()
+        return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
+
+
+    def post(self, *args, **kwargs):
+        reset_password_form = ResetPasswordForm(self.request.POST)
+        message_template = "user/reset_password_sms.txt.development"
+        
+        if reset_password_form.is_valid():
+            user_id = kwargs.get("pk")
+            phone_no = reset_password_form.cleaned_data.get("phone_no")
+            user = User.objects.get(phone_no=phone_no)
+            if user:
+                context = get_context_for_password_reset(user)
+                message = render_to_string(message_template, context)
                 source = settings.TWILIO_PHONE_NO
                 destination = "%s%s" %("+256", phone_no[1:])
-                notification = NotificationImpl(sms_client)
-                notification.send(source, destination, message)
+                send_sms(source, destination, message)
                 
-            messages.success(request, "SMS with password reset instructions has been sent.")
-            return render(request, "user/reset_password.html.development", {"form": form})
-
-    else:
-        form = ResetPasswordForm()
-        return render(request, "user/reset_password.html.development", {"form": form})
-
-
+            # Donot alert users of non existent accounts
+            messages.success(self.request, "SMS with password reset instructions has been sent.")
+            return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
+    
+    
 @login_required
 def profile(request):
     return render(request, "user/profile.html.development")

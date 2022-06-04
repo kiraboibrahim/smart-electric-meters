@@ -336,7 +336,10 @@ class StronPower(MeterAPI):
         if response_text == "true":
             return True
 
+        """Should I just raise exceptions instead of returning booleans????"""
         return False
+    
+    
         
 
     def register_price_category(self, payload) -> bool:

@@ -16,7 +16,7 @@ class NewMeterCustomer():
         
         # Manager Information
         self.meter_owner_id = meter_owner.id
-        self.meter_owner_name = "%s %s" %(meter_onwer.first_name, meter_owner.last_name)
+        self.meter_owner_name = "%s %s" %(meter_owner.first_name, meter_owner.last_name)
         self.meter_owner_address = meter_owner.address
         self.meter_owner_phone_no = meter_owner.phone_no
         self.meter_owner_email = meter_owner.email

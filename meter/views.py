@@ -7,7 +7,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.views.generic.list import ListView
 from django.views.generic.edit import CreateView, UpdateView
 from django.contrib.messages.views import SuccessMessageMixin
@@ -56,7 +56,8 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
         # Register meter with the remote meter api before registering it locally
         manufacturer = form.cleaned_data["manufacturer"]
         meter = Meter(**form.cleaned_data)
-        payload = payloads.NewCustomer(meter)
+        meter_owner = meter.manager
+        payload = payloads.NewMeterCustomer(meter, meter_owner)
         meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(manufacturer.name))
         result = meter_api.register_meter_customer(payload)
         if not result:
@@ -96,17 +97,18 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
     
 @user_passes_test(is_admin_or_super_admin)
 def delete_meter(request, pk):
-    meter = get_object_or_404(Meter, pk=pk)
-    meter.delete()
-    messages.success(request, "Meter: %s has been deleted successfully." %(meter.meter_no))
+    num_of_meters_deleted, deleted_meter = Meter.objects.filter(id=pk).delete()
+    if num_of_meters_deleted == 0:
+        raise Http404("Meter doesnot exist")
+
+    messages.success(request, "Meter has been deleted successfully")
     return redirect("list_meters")
 
 def unlink_meter(request, pk):
-    meter = get_object_or_404(Meter, pk=pk)
-    # Unlink the meter from the manager it was assigned
-    meter.manager = None
-    meter.save()
-    messages.success(request, "Meter %s has been unlinked successfully" %(meter.meter_no))
+    num_of_meters_updated = Meter.objects.filter(id=pk).update(manager=None)
+    if num_of_meters_updated == 0:
+        raise Http404()
+    messages.success(request, "Meter has been unlinked successfully")
     return redirect("list_meters")
 
 def wait_for_mobile_money_transaction(mobile_money_api, transaction_reference):
