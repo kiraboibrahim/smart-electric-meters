@@ -41,13 +41,12 @@ class Meter(models.Model):
 
 
 
-class TokenHistory(models.Model):
+class TokenLog(models.Model):
     # From the decision reached, the name field is not necessary, and thus it is allowed to have NULL values
     name = models.CharField("Purchaser's Name", max_length=255, null=True)
     # When a user who bought a token is deleted from the database, then all child rows in this table will be set to NULL
     user = models.ForeignKey(User, models.SET_NULL, null=True)
     token_no = models.PositiveIntegerField(unique=True)
-    phone_no = models.CharField(max_length=10)
     # Amount of money paid
     amount_paid = models.CharField(max_length=255)
     # How many token units purchased
