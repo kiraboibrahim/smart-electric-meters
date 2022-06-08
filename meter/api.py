@@ -345,9 +345,9 @@ class StronPower(MeterAPI):
 
         payload = {
     
-            "PRICE_ID": payload.pk,
+            "PRICE_ID": payload.id,
             "Categories": payload.label,
-            "PRICE": payload.price,
+            "PRICE": payload.price_ugx,
             "VAT_RATE": 0.0,
             "PRICE_UNIT": "UGX",
             "REMARK": "Registering Price Category"
