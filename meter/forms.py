@@ -18,7 +18,6 @@ class EditMeterForm(CreateMeterForm):
 class BuyTokenForm(forms.Form):
     meter_no = forms.CharField(max_length=11, label="Meter Number")
     amount = forms.IntegerField(help_text="Local tax rates may apply", widget=forms.TextInput(attrs={"type": "number", "placeholder": "5000"}))
-    phone_no = forms.CharField(max_length=15, label="Phone Number", help_text="MTN mobile number to pay with", widget=forms.TextInput(attrs={'placeholder': '07XXXXXXXX'}))
 
 
     def clean(self):
