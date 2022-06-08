@@ -28,7 +28,7 @@ class AirtelMoneyException(MTNMobileMoneyException):
         
     
 
-class StronPowerException(Exception):
+class MeterAPIException(Exception):
     def __init__(self, status_code: int, message: str = ""):
         self.status_code = status_code
         self.message = message
@@ -333,11 +333,10 @@ class StronPower(MeterAPI):
         response = self.request("NewCustomer", payload)
 
         response_text = response.text.strip('"')
-        if response_text == "true":
-            return True
+        if response_text != "true":
+            self.raise_exception(400, "Bad request")
 
-        """Should I just raise exceptions instead of returning booleans????"""
-        return False
+        return True
     
     
         
@@ -359,11 +358,10 @@ class StronPower(MeterAPI):
         response = self.request("NewPrice", payload)
             
         response_text = response.text.strip('"')
-        if response_text == "true":
-            return True
-        # Realised that the API is not consistent with the error messages(In some cases, they contain no debugging info - reason for the error)
-        # it returns
-        return False
+        if response_text != "true":
+            self.raise_exception(400, "Bad request")
+            
+        return True
             
     def get_token(self, payload) -> dict:
         payload = {
@@ -389,7 +387,7 @@ class StronPower(MeterAPI):
                }
     
     def raise_exception(self, code: int, message: str):
-        raise StronPowerException(code, message)
+        raise MeterAPIException(code, message)
 
 
     def request(self, endpoint: str, payload):
