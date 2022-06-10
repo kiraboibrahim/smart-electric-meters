@@ -317,13 +317,14 @@ class StronPower(MeterAPI):
         random_customer_id = str(uuid.uuid4())
         payload = {
             
-            "AccountID": str(payload.meter_owner_id),
+            "AccountID": "API-ID",
             "CustomerID": random_customer_id,
             "CustomerName": payload.meter_owner_name,
             "CustomerAddress": payload.meter_owner_address,
             "CustomerPhone": payload.meter_owner_phone_no,
             "CustomerEmail": payload.meter_owner_email,
             "PriceCategories": payload.meter_price_category,
+            "SalesStationID": "API-STATION",
             "MeterID": payload.meter_no,
             "MeterType": 0
         }
@@ -367,8 +368,8 @@ class StronPower(MeterAPI):
         payload = {
 
             "MeterID": payload.meter_no,
-            "is_vend_by_unit": "false",
-            "Amount": payload.amount_ugx
+            "is_vend_by_unit": "true",
+            "Amount": "%s" %(str(payload.amount))
         }
         # Upadate with the username, password, and company name
         payload.update(self.payload)
@@ -382,7 +383,7 @@ class StronPower(MeterAPI):
         return {
                  "token": response[0]["Token"],
                  "created_at": response[0]["Gen_time"],
-                 "num_of_units": response[0]["Total_units"],
+                 "num_of_units": response[0]["Total_unit"],
                  "unit": response[0]["Unit"],
                }
     
