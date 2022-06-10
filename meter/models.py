@@ -46,7 +46,7 @@ class TokenLog(models.Model):
     name = models.CharField("Purchaser's Name", max_length=255, null=True)
     # When a user who bought a token is deleted from the database, then all child rows in this table will be set to NULL
     user = models.ForeignKey(User, models.SET_NULL, null=True)
-    token_no = models.PositiveIntegerField(unique=True)
+    token_no = models.CharField(max_length=255, unique=True)
     # Amount of money paid
     amount_paid = models.CharField(max_length=255)
     # How many token units purchased
