@@ -12,7 +12,7 @@ class NewMeterCustomer():
         self.meter_owner = meter_owner
         
         self.meter_no = meter.meter_no
-        self.meter_price_category = meter_owner.priceperunit.label
+        self.meter_price_category = "API-STANDARD"
         
         # Manager Information
         self.meter_owner_id = meter_owner.id
@@ -23,10 +23,10 @@ class NewMeterCustomer():
 
 
 class GetToken():
-    def __init__(self, meter, amount_ugx):
+    def __init__(self, meter, amount):
         self.meter = meter
         self.meter_no = meter.meter_no
-        self.amount_ugx = amount_ugx
+        self.amount = amount
 
 
 
@@ -35,7 +35,7 @@ class NewPriceCategory():
         self.price_category = price_category
         self.id = str(price_category.id)
         self.label = price_category.label
-        self.price_ugx = price_category.price_per_unit
+        self.price_ugx = price_category.price
         
 
 
