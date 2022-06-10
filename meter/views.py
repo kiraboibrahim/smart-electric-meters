@@ -16,8 +16,8 @@ from django.conf import settings
 from django.views import View
 
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin, create_meter_manufacturer_hash
-from meter.models import MeterCategory, Meter, Manufacturer, TokenHistory
-from meter.api import MobileMoneyAPIFactoryImpl, MeterAPIFactoryImpl
+from meter.models import MeterCategory, Meter, Manufacturer, TokenLog
+from meter.api import MeterAPIFactoryImpl, MeterAPIException
 from meter.forms import BuyTokenForm
 from meter import payloads
 
@@ -28,10 +28,57 @@ from user.models import PricePerUnit
 
 # Create your views here.
 User = get_user_model()
-logger = logging.getLogger(__name__)
-TRANSACTION_SUCCESSFUL = 2
-TRANSACTION_FAILED = 4
 
+def get_charges_ugx(meter, gross_amount_ugx):
+    percentage_charge = meter.meter_category.percentage_charge
+    fixed_charge_ugx = meter.meter_category.fixed_charge
+    total_charges_ugx = math.ceil(((percentage_charge / 100) * gross_amount_ugx) + fixed_charge_ugx)
+    return total_charges_ugx
+
+def get_net_amount_ugx(meter, gross_amount_ugx):
+    total_charges_ugx = get_charges_ugx(meter, gross_amount_ugx)
+    net_amount_ugx = gross_amount_ugx - total_charges_ugx
+    return net_amount_ugx
+    
+def get_token(meter, gross_amount_ugx):
+    net_amount_ugx = get_net_amount_ugx(meter, gross_amount_ugx)
+    num_token_units = math.ceil(net_amount_ugx / meter.manager.priceperunit.price)
+    payload = payloads.GetToken(meter, num_token_units)
+    meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(meter.manufacturer.name))
+    token = meter_api.get_token(payload)
+    return token
+
+    
+def log_token(user, meter, token, gross_amount_ugx):
+    name = "%s %s" %(user.first_name, user.last_name)
+    token_log = TokenLog.objects.create(name=name, user=user, token_no=token["token"], amount_paid=gross_amount_ugx, num_token_units=token["num_of_units"], meter=meter)
+    return token_log
+
+def get_price_category_payload(price_category):
+    return payloads.NewPriceCategory(price_category)
+
+def is_price_category_registered_with_manufacturer(price_category, manufacturer):
+    # Do we have any meters for this manufacturer
+    meters_for_manufacturer = Meter.objects.filter(manufacturer=manufacturer)
+    if meters_for_manufacturer.exists():
+        return True
+    return False
+
+def register_price_category(manufacturer, price_category):
+    if not is_price_category_registered_with_manufacturer(price_category, manufacturer):
+        payload = get_price_category_payload(price_category)
+        meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(manufacturer.name))
+        meter_api.register_price_category(payload)
+
+def get_new_meter_customer_payload(meter, meter_owner):
+    payload = payloads.NewMeterCustomer(meter, meter_owner)
+    return payload
+
+def register_meter_customer(meter, meter_owner):
+    payload = get_new_meter_customer_payload(meter, meter_owner)
+    meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(meter.manufacturer.name))
+    return meter_api.register_meter_customer(payload)
+    
 class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
     template_name = "meter/list_meters.html.development"
     context_object_name = "meters"
@@ -54,21 +101,17 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
 
     def form_valid(self, form):
         # Register meter with the remote meter api before registering it locally
-        manufacturer = form.cleaned_data["manufacturer"]
         meter = Meter(**form.cleaned_data)
         meter_owner = meter.manager
-        payload = payloads.NewMeterCustomer(meter, meter_owner)
-        meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(manufacturer.name))
-        result = meter_api.register_meter_customer(payload)
-        if not result:
-            messages.error(self.request, "Meter registration failed because remote meter API registration failed")
+        price_category = meter.manager.priceperunit
+  
+        try:
+            register_meter_customer(meter, meter_owner)
+        except MeterAPIException as e:
+            messages.error(self.request, "Remote API meter registration failed")
             return super(MeterCreateView, self).form_invalid(form)
         
         return super(MeterCreateView, self).form_valid(form)
-
-    
-    """ TODO: Initialize manager field with only managers """
-    """ TODO: Register remotely with the company manufacturer API """
     
 
     
@@ -111,102 +154,33 @@ def unlink_meter(request, pk):
     messages.success(request, "Meter has been unlinked successfully")
     return redirect("list_meters")
 
-def wait_for_mobile_money_transaction(mobile_money_api, transaction_reference):
-    transaction_timeout = 300 # 5 minutes
-    
-    while transaction_timeout > 0:
-        transaction_state = mobile_money_api.get_transaction_state(transaction_reference)
 
-        if transaction_state == TRANSACTION_SUCCESSFUL or transaction_state == TRANSACTION_FAILED:
-            break
-        time.sleep(1)
-        transaction_timeout -= 1
-        
-    return transaction_state 
-
-def debit_funds(payload):
-    mobile_money_api = MobileMoneyAPIFactoryImpl.create_api("mtn")
-    mobile_money_api.debit_funds(payload)
-    transaction_reference = payload.transaction_reference
-    transaction_state = wait_for_mobile_money_transaction(mobile_money_api, transaction_reference)
-
-    return transaction_state
-
-def get_charges_ugx(meter, gross_amount_ugx):
-    percentage_charge = meter.meter_category.percentage_charge
-    fixed_charge_ugx = meter.meter_category.fixed_charge
-    total_charges_ugx = math.ceil(((percentage_charge / 100) * gross_amount_ugx) + fixed_charge_ugx)
-    return total_charges_ugx
-
-def get_net_amount_ugx(meter, gross_amount_ugx):
-    total_charges_ugx = get_charges_ugx(meter, gross_amount_ugx)
-    net_amount_ugx = gross_amount_ugx - total_charges_ugx
-    return net_amount_ugx, total_charges_ugx
-    
-def get_token(meter, gross_amount_ugx):
-    net_amount_ugx = get_net_amount_ugx(meter, gross_amount_ugx)
-    payload = payloads.GetToken(meter, net_amount_ugx)
-    meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(meter.manufacturer.name))
-    token = meter_api.get_token(payload)
-
-    return token
-
-def log_mobile_money_transaction(debit_payload, charge, transaction_state):
-    state = 1 if transaction_state == TRANSACTION_SUCCESSFUL else 0
-    print("="*50)
-    print(state)
-    transaction = Transaction.objects.create(external_id=debit_payload.transaction_id, charge=charge, amount=debit_payload.amount_ugx, phone_no=debit_payload.phone_no, state=state)
-    return transaction
-
-    
-def log_token(user, meter, phone_no, token, gross_amount_ugx):
-    name = "%s %s" %(user.first_name, user.last_name)
-    token_log = TokenHistory.objects.create(name=name, user=user, token_no=token["token"], phone_no=phone_no, amount_paid=gross_amount_ugx, num_token_units=token["num_of_units"], meter=meter)
-    return token_log
-
-def get_debit_payload(cleaned_form_data):
-    phone_no = cleaned_form_data["phone_no"]
-    gross_amount_ugx = cleaned_form_data["amount"]
-    transaction_id = str(uuid.uuid4())
-    transaction_reference = str(uuid.uuid4())
-    return payloads.DebitFunds(phone_no, gross_amount_ugx, transaction_id, transaction_reference)
 
 
 class BuyToken(View):
 
     def get(self, request, *args, **kwargs):
-        pk = kwargs.get("pk", None)
-        if pk:
-            meter = get_object_or_404(Meter, pk=pk)
-            form = BuyTokenForm(initial={"meter_no": meter.meter_no})
+        user_id = kwargs.get("pk")
+        if user_id:
+            meter = get_object_or_404(Meter, pk=user_id)
+            buy_token_form = BuyTokenForm(initial={"meter_no": meter.meter_no})
         else:
-            form = BuyTokenForm()
+            buy_token_form = BuyTokenForm()
         
-        return render(request, "meter/buy_token.html.development", {"form": form})
+        return render(request, "meter/buy_token.html.development", {"form": buy_token_form})
 
 
     def post(self, request, *args, **kwargs):
-        form = BuyTokenForm(request.POST)
-        if form.is_valid():
-            meter = get_object_or_404(Meter, meter_no=form.cleaned_data["meter_no"])
-            debit_payload = get_debit_payload(form.cleaned_data)
-            transaction_state = debit_funds(debit_payload)
+        buy_token_form = BuyTokenForm(request.POST)
+        if buy_token_form.is_valid():
+            meter = get_object_or_404(Meter, meter_no=buy_token_form.cleaned_data["meter_no"])
             
-            # Successful Transaction
-            if transaction_state == TRANSACTION_SUCCESSFUL:
-                gross_amount_ugx = form.cleaned_data.get("amount")
-                # Log the mobile money transaction in order to follow up on failed token generation
-                # Yet the mobile money transaction has been successful
-                charges_ugx = get_charges_ugx(meter, gross_amount_ugx)
-                log_mobile_money_transaction(debit_payload, charges_ugx, transaction_state)
-                token = get_token(meter, gross_amount_ugx)
-                phone_no = form.cleaned_data.get("phone_no")
-                log_token(request.user, meter, phone_no, token, gross_amount_ugx)
+            gross_amount_ugx = buy_token_form.cleaned_data.get("amount")
+            token = get_token(meter, gross_amount_ugx)
+            log_token(request.user, meter, token, gross_amount_ugx)
                     
-                """ TODO: Send SMS to user with token number """
-                messages.success(request, "Token: %s, Units: %s" %(token["token"], token["num_of_units"]))
-            else:
-                messages.error(request, "Mobile money request has failed.")
+            """ TODO: Send SMS to user with token number """
+            messages.success(request, "Token: %s Units: %s" %(token["token"], token["num_of_units"]))
                 
-        return render(request, "meter/buy_token.html.development", {"form": form})
+        return render(request, "meter/buy_token.html.development", {"form": buy_token_form})
         
