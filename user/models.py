@@ -38,4 +38,4 @@ class PricePerUnit(models.Model):
     # CASCADE: Delete the priceperunit associated with the manager once the manager is deleted
     manager = models.OneToOneField(PrepaidMeterUser, related_name="priceperunit", unique=True, on_delete=models.CASCADE, limit_choices_to={"acc_type": MANAGER})
     label = models.CharField(max_length=255, unique=True)
-    price_per_unit = models.PositiveIntegerField()
+    price = models.PositiveIntegerField()
