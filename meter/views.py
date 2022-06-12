@@ -17,13 +17,13 @@ from django.views import View
 
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin, create_meter_manufacturer_hash
 from meter.models import MeterCategory, Meter, Manufacturer, TokenLog
-from meter.api import MeterAPIFactoryImpl, MeterAPIException
+from meter.externalAPI.meters import MeterAPIFactoryImpl, MeterAPIException
 from meter.forms import BuyTokenForm
 from meter import payloads
 
 from transaction.models import Transaction
 
-from user.acc_types import MANAGER
+from user.account_types import MANAGER
 from user.models import PricePerUnit
 
 # Create your views here.

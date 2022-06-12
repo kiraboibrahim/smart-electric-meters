@@ -1,6 +1,6 @@
 # A custom manager for creating users
 from django.contrib.auth.base_user import BaseUserManager
-from .acc_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
+from user.account_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
 
 class PrepaidMeterUserManager(BaseUserManager):
     def create_user(self, phone_no, first_name, last_name, address, password=None,  **extra_fields):
@@ -20,25 +20,25 @@ class PrepaidMeterUserManager(BaseUserManager):
 
     
     def create_manager(self, phone_no, first_name, last_name, address, password=None, **extra_fields):
-        extra_fields["acc_type"] = MANAGER
+        extra_fields["account_type"] = MANAGER
         user = self.create_user(phone_no, first_name, last_name, address, password, **extra_fields) 
         return user
 
     
     def create_admin(self, phone_no, first_name, last_name, address, password=None, **extra_fields):
-        extra_fields["acc_type"] =  ADMIN
+        extra_fields["account_type"] =  ADMIN
         user = self.create_user(phone_no, first_name, last_name, address, password, **extra_fields) 
         return user
 
     def create_superadmin(self, phone_no, first_name, last_name, address, password=None, **extra_fields):
         # This method creates super admins
-        extra_fields["acc_type"] = SUPER_ADMIN
+        extra_fields["account_type"] = SUPER_ADMIN
         user = self.create_user(phone_no, first_name, last_name, address, password, **extra_fields) 
         return user
 
     def create_superuser(self, phone_no, first_name, last_name, address, password=None, **extra_fields):
-        # since acc_type is a required field when creating a new user, I am using a NONE account type because superusers are not analogous to super admins
-        extra_fields["acc_type"] = NONE
+        # since account_type is a required field when creating a new user, I am using a NONE account type because superusers are not analogous to super admins
+        extra_fields["accoount_type"] = NONE
         # This is django's superuser account creation method
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)

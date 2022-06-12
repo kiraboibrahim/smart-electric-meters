@@ -4,9 +4,9 @@ from django.contrib.auth.forms import PasswordResetForm
 from django import forms
 from django.db.models import Q
 from passwords.fields import PasswordField
-from .acc_types import ADMIN, MANAGER
+from user.account_types import ADMIN, MANAGER
 
-admin_acc_choices = (
+admin_account_choices = (
     (MANAGER, "Manager"),
 )
 
@@ -16,7 +16,7 @@ User = get_user_model()
 class CreateUserBaseForm(ModelForm):
     password = PasswordField()
     password2 = PasswordField(label="Confirm Password")
-    field_order = ["first_name", "last_name", "email", "phone_no", "address", "acc_type"]
+    field_order = ["first_name", "last_name", "email", "phone_no", "address", "account_type"]
 
     def clean_password2(self):
         password = self.cleaned_data["password"]
@@ -27,9 +27,9 @@ class CreateUserBaseForm(ModelForm):
         return password
 
     def save(self):
-        acc_type = self.cleaned_data["acc_type"]
+        account_type = self.cleaned_data["account_type"]
         del self.cleaned_data["password2"] # Not required for user creation
-        if acc_type == ADMIN:
+        if account_type == ADMIN:
             return User.objects.create_admin(**self.cleaned_data)
         else:
             return User.objects.create_manager(**self.cleaned_data)
@@ -44,7 +44,7 @@ class CreateUserBaseForm(ModelForm):
 
 class AdminCreateUserForm(CreateUserBaseForm):
     
-    acc_type = forms.ChoiceField(label="Account type", choices=admin_acc_choices)
+    account_type = forms.ChoiceField(label="Account type", choices=admin_account_choices)
     
     class Meta:
         model = User
@@ -54,14 +54,14 @@ class AdminCreateUserForm(CreateUserBaseForm):
          }
 
 
-super_admin_acc_choices = (
+super_admin_account_choices = (
     (ADMIN, "Admin"),
     (MANAGER, "Manager"),
 )
 
 # The super admin can create admins and managers, Use super admin account choices
 class SuperAdminCreateUserForm(CreateUserBaseForm):
-    acc_type = forms.ChoiceField(label="Account type", choices=super_admin_acc_choices)
+    account_type = forms.ChoiceField(label="Account type", choices=super_admin_account_choices)
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email", "phone_no", "address"]

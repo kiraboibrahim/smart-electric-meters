@@ -3,7 +3,7 @@ from django.core.validators import MaxValueValidator
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from user.acc_types import MANAGER
+from user.account_types import MANAGER
 
 User = get_user_model()
 # Create your models here.
@@ -31,7 +31,7 @@ class Meter(models.Model):
     meter_no = models.CharField("Meter Number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.PROTECT)
     # If a manager is deleted, the meter owner will be set NULL ie disowning all from the manager
-    manager = models.ForeignKey(User, models.SET_NULL, null=True, blank=True, limit_choices_to={"acc_type": MANAGER})
+    manager = models.ForeignKey(User, models.SET_NULL, null=True, blank=True, limit_choices_to={"account_type": MANAGER})
     # Prevent deletion of meter types if there are still child rows referencing it
     meter_category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT)
         

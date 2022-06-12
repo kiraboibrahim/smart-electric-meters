@@ -19,9 +19,10 @@ from django.urls import reverse_lazy
 from django.views import View
 
 from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
-from meter.api import NotificationImpl, TwilioSMSClient
+from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
+
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
-from user.acc_types import SUPER_ADMIN, ADMIN, MANAGER
+from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
 from user.utils import is_action_allowed
 from user.models import PricePerUnit
 
@@ -43,11 +44,11 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
     context_object_name = "users"
 
     def get_queryset(self):
-        user_type = self.request.user.acc_type
-        if user_type == SUPER_ADMIN:
-            return User.objects.filter(Q(acc_type=MANAGER) | Q(acc_type=ADMIN))
+        account_type = self.request.user.account_type
+        if account_type == SUPER_ADMIN:
+            return User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
         else:
-            return User.objects.filter(Q(acc_type=MANAGER))
+            return User.objects.filter(Q(account_type=MANAGER))
         
 
 class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
@@ -62,7 +63,7 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
         Admins can create managers only and while super admins can create both admins and managers.
         The above privileges have been discerned with the use of different forms.
         """
-        if self.request.user.acc_type == SUPER_ADMIN:
+        if self.request.user.account_type == SUPER_ADMIN:
             return SuperAdminCreateUserForm
         else:
             return AdminCreateUserForm
@@ -70,11 +71,10 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
     def get_success_message(self, cleaned_data):
         # Make the meter number accessible in the success_message
         designation = "Manager"
-        if cleaned_data["acc_type"] == ADMIN:
+        if cleaned_data["account_type"] == ADMIN:
             designation = "Administrator"
         return self.success_message % dict(
             cleaned_data,
-            meter_no=self.object.meter_no,
             designation=designation
         )
     
@@ -96,7 +96,7 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateVi
         Prevent admins from deleting fellow admins and super admins and likewise,
         prevent super admins from editing fellow super admins
         """
-        if not is_action_allowed(request.user.acc_type, user):
+        if not is_action_allowed(request.user.account_type, user):
             raise PermissionDenied
         
         return super(UserEditView, self).post(request, *args, **kwargs)
@@ -112,7 +112,7 @@ def revoke_password(request, pk):
     Donot allow admins to revoke super admin and fellow admin accounts passwords and likewise stop super 
     admins from revoking passwords of fellow super admins
     """
-    if not is_action_allowed(request.user.acc_type, user):
+    if not is_action_allowed(request.user.account_type, user):
         raise PermissionDenied
     
     # Name of account whose password will be revoked
@@ -132,7 +132,7 @@ def revoke_password(request, pk):
 def delete_user(request, pk):
     user = get_object_or_404(User, pk=pk)
     # Prevent admins from deleting super admin and fellow admin accounts and likewise super admins from deleting fellow super admin accounts
-    if not is_action_allowed(request.user.acc_type, user):
+    if not is_action_allowed(request.user.account_type, user):
         raise PermissionDenied
     # Delete user 
     user.delete()
@@ -185,7 +185,7 @@ class ResetPassword(View):
                 destination = "%s%s" %("+256", phone_no[1:])
                 send_sms(source, destination, message)
                 
-            # Donot alert users of non existent accounts
+            # Donot alert the user about users that donot exist
             messages.success(self.request, "SMS with password reset instructions has been sent.")
             return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
     

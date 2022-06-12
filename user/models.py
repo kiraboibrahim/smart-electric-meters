@@ -1,13 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from .managers import PrepaidMeterUserManager
-from .acc_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
+from user.managers import PrepaidMeterUserManager
+from user.account_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
 # Create your models here.
 
 # Super Admin account mask    = 00000001
 # Admin account mask          = 00000010
 # Manager Account mask        = 00000100
-acc_choices = [
+account_choices = [
     (NONE, "None"),
     (SUPER_ADMIN, "Super Admin"),
     (ADMIN, "Admin"),
@@ -23,7 +23,7 @@ class PrepaidMeterUser(AbstractUser):
     # Phone number is only 10 digits long
     phone_no = models.CharField(verbose_name="Phone Number", max_length=10, unique=True)
     address = models.CharField(max_length=255)
-    acc_type = models.PositiveIntegerField(choices=acc_choices)
+    account_type = models.PositiveIntegerField(choices=account_choices)
 
     USERNAME_FIELD = "phone_no"
     REQUIRED_FIELDS = ["first_name", "last_name", 'address'] 
@@ -36,6 +36,6 @@ class PrepaidMeterUser(AbstractUser):
 # The price_per_unit for each manager acccount
 class PricePerUnit(models.Model):
     # CASCADE: Delete the priceperunit associated with the manager once the manager is deleted
-    manager = models.OneToOneField(PrepaidMeterUser, related_name="priceperunit", unique=True, on_delete=models.CASCADE, limit_choices_to={"acc_type": MANAGER})
+    manager = models.OneToOneField(PrepaidMeterUser, related_name="priceperunit", unique=True, on_delete=models.CASCADE, limit_choices_to={"account_type": MANAGER})
     label = models.CharField(max_length=255, unique=True)
     price = models.PositiveIntegerField()
