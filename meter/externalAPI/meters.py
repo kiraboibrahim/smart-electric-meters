@@ -5,51 +5,64 @@ import uuid
 from django.conf import settings
 from meter.utils import create_meter_manufacturer_hash
 
-meter_api_classes = {}
+meter_APIs = {}
 
 def register(cls):
     """
-    This function registers all meter api classes so that the factory method can easily instantiate the meter api classes
+    This function registers all meter API classes so that the factory method can easily instantiate the meter APIs
     """
-    meter_manufacturer_hash = create_meter_manufacturer_hash(cls.__name__)
-    meter_api_classes[meter_manufacturer_hash] = cls
+    API_id = create_meter_manufacturer_hash(cls.__name__)
+    meter_APIs[API_id] = cls
     return cls
 
+class Token:
+
+    def set_token_no(self, token_no):
+        self.token_no = token_no
+
+    def set_num_of_units(self, num_of_units):
+        self.num_of_units = num_of_units
+
+    def set_unit(self, unit):
+        self.unit = unit
 
 class MeterAPI(abc.ABC):
 
     @abc.abstractmethod
-    def get_token(self, payload):
+    def get_token(self, token_spec):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_meter_customer(self, payload):
+    def register_customer(self, customer):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_price_category(self, payload):
+    def register_unit_price(self, unit_price):
         raise NotImplementedError
     
 
 class MeterAPIFactory(abc.ABC):
 
     @abc.abstractmethod
-    def create_api(self, api_name: str):
+    def get_API(self, manufacturer):
         raise NotImplementedError
 
 
 class MeterAPIFactoryImpl(MeterAPIFactory):
     
     @classmethod
-    def create_api(cls, company_name: str):
-        meter_api_class = meter_api_classes.get(create_meter_manufacturer_hash(company_name), None)
-        if meter_api_class is not None:
-            return meter_api_class()
-        raise Exception("Meter API for %s has not been added yet." %(company_name))
+    def get_API(cls, manufacturer):
+        API_id = create_meter_manufacturer_hash(manufacturer)
+        meter_API = meter_APIs.get(API_id)()
+        if meter_API is None:
+            raise Exception("API for %s has not been implemented yet" %(manufacturer))
+            
+        return meter_API
+        
 
 
 class MeterAPIException(Exception):
-    def __init__(self, status_code: int, message: str = ""):
+    def __init__(self, status_code, message):
         self.status_code = status_code
         self.message = message
         super().__init__(self.message)
@@ -62,99 +75,112 @@ class MeterAPIException(Exception):
 class StronPower(MeterAPI):
 
     BASE_URL = "http://www.server-api.stronpower.com/api"
+    ENERGY_METER = 0
     
     def __init__(self):
+        
+        self.client_name = "LEGIT-SYSTEMS"
         self.username = settings.STRON_API_USERNAME
         self.password = settings.STRON_API_PWD
-        self.company_name = "LEGIT-SYSTEMS"
         
-        # Every payload should have username and password fields
-        self.payload = {
-            
+        self.base_post_data = {
+
             "UserName": self.username,
             "PassWord": self.password,
-            "CompanyName": self.company_name,
-        }
-
-    def register_meter_customer(self, payload) -> bool:
-        random_customer_id = str(uuid.uuid4())
-        payload = {
+            "CompanyName": self.client_name
             
-            "AccountID": "API-ID",
-            "CustomerID": random_customer_id,
-            "CustomerName": payload.meter_owner_name,
-            "CustomerAddress": payload.meter_owner_address,
-            "CustomerPhone": payload.meter_owner_phone_no,
-            "CustomerEmail": payload.meter_owner_email,
-            "PriceCategories": payload.meter_price_category,
-            "SalesStationID": "API-STATION",
-            "MeterID": payload.meter_no,
-            "MeterType": 0
         }
 
-        payload.update(self.payload)
+    
+    def get_customer_endpoint_post_data(self, customer):
 
-        response = self.request("NewCustomer", payload)
+        post_data = {
+            "AccountID": "API-ID",
+            "SalesStationID": "API-STATION",
+            "CustomerID": customer.get_id(),
+            "CustomerName": customer.get_full_name(),
+            "CustomerAddress": customer.address,
+            "CustomerPhone": customer.phone_no,
+            "CustomerEmail": customer.email,
+            "PriceCategories": customer.unit_price_label,
+            "MeterID": customer.meter.meter_no,
+            "MeterType": self.__class__.ENERGY_METER
+        }
+        return post_data
+    
+    def register_customer(self, customer):
+        post_data = self.get_customer_endpoint_post_data(customer)
+        post_data.update(self.base_post_data)
 
-        response_text = response.text.strip('"')
-        if response_text != "true":
-            self.raise_exception(400, "Bad request")
+        API_response = self.request("NewCustomer", post_data)
+
+        customer_registered = API_response.text.strip('"')
+        if customer_registered != "true":
+            self.raise_exception(400, "Customer registration failed")
 
         return True
 
-    def register_price_category(self, payload) -> bool:
+    def get_unit_price_endpoint_post_data(self, unit_price):
 
-        payload = {
-    
-            "PRICE_ID": payload.id,
-            "Categories": payload.label,
-            "PRICE": payload.price_ugx,
+        post_data = {
+            "PRICE_ID": unit_price.id,
+            "Categories": unit_price.label,
+            "PRICE": unit_price.price,
             "VAT_RATE": 0.0,
             "PRICE_UNIT": "UGX",
-            "REMARK": "Registering Price Category"
+            "REMARK": "Unit Price"
         }
-        # Set username and password 
-        payload.update(self.payload)
+        return post_data
+
+    
+    def register_unit_price(self, unit_price):
+        post_data = self.get_unit_price_endpoint_post_data(unit_price)
+        post_data.update(self.base_post_data)
         
-        response = self.request("NewPrice", payload)
+        API_response = self.request("NewPrice", post_data)
             
-        response_text = response.text.strip('"')
-        if response_text != "true":
-            self.raise_exception(400, "Bad request")
+        unit_price_registered = API_response.text.strip('"')
+        if unit_price_registered != "true":
+            self.raise_exception(400, "Unit price registration failed")
             
         return True
-            
-    def get_token(self, payload) -> dict:
-        payload = {
 
-            "MeterID": payload.meter_no,
+    def get_token_endpoint_post_data(self, token_spec):
+
+        post_data = {
+
+            "MeterID": token_spec.get_meter_no(),
             "is_vend_by_unit": "true",
-            "Amount": "%s" %(str(payload.amount))
+            "Amount": "%s" %(str(token_spec.num_of_units))
         }
-        # Upadate with the username, password, and company name
-        payload.update(self.payload)
+        return post_data
+
+    def get_token(self, token_spec):
+        post_data = self.get_token_endpoint_post_data(token_spec)
+        post_data.update(self.base_post_data)
             
-        response = self.request("VendingMeter", payload)
-        response = response.json()
-        if response == []:
-            # It is an empty response, some error have been triggered but the api doesnot give helpful info
-            self.raise_exception(400, "Bad request- No token received from meter API")
+        API_response = self.request("VendingMeter", post_data)
+        try:
+            generated_token_from_API = API_response.json()[0]
 
-        return {
-                 "token": response[0]["Token"],
-                 "created_at": response[0]["Gen_time"],
-                 "num_of_units": response[0]["Total_unit"],
-                 "unit": response[0]["Unit"],
-               }
+            token = Token()
+            token.set_token_no(generated_token_from_API["Token"])
+            token.set_num_of_units(generated_token_from_API["Total_unit"])
+            token.set_unit(generated_token_from_API["Unit"])
+
+            return token
     
-    def raise_exception(self, code: int, message: str):
-        raise MeterAPIException(code, message)
+        except IndexError as e:
+            self.raise_exception(400, "No token received from meter API")
+            
+    def raise_exception(self, status_code, message):
+        raise MeterAPIException(status_code, message)
 
 
-    def request(self, endpoint: str, payload):
-        response = requests.post("%s/%s" %(StronPower.BASE_URL, endpoint), json=payload)
-        if response.status_code != 200:
-            self.raise_exception(response.status_code, response.text)
+    def request(self, endpoint, post_data):
+        API_response = requests.post("%s/%s" %(self.__class__.BASE_URL, endpoint), json=post_data)
+        if API_response.status_code != 200:
+            self.raise_exception(API_response.status_code, API_response.text)
 
-        return response
+        return API_response
 

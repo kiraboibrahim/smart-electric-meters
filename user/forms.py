@@ -3,48 +3,45 @@ from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import PasswordResetForm  
 from django import forms
 from django.db.models import Q
-from passwords.fields import PasswordField
 from user.account_types import ADMIN, MANAGER
 
-admin_account_choices = (
+ADMIN_ACCOUNT_CHOICES = (
     (MANAGER, "Manager"),
 )
+SUPER_ADMIN_ACCOUNT_CHOICES = (
+    (ADMIN, "Admin"),
+    (MANAGER, "Manager"),
+)
+
 
 User = get_user_model()
 
 
 class CreateUserBaseForm(ModelForm):
-    password = PasswordField()
-    password2 = PasswordField(label="Confirm Password")
+    password = forms.CharField(widget=forms.PasswordInput)
+    password_confirm = forms.CharField(label="Confirm password", widget=forms.PasswordInput)
     field_order = ["first_name", "last_name", "email", "phone_no", "address", "account_type"]
 
-    def clean_password2(self):
+    def clean_password_confirm(self):
         password = self.cleaned_data["password"]
-        password2 = self.cleaned_data["password2"]
-        if password != password2:
+        password_confirm = self.cleaned_data["password_confirm"]
+        if password != password_confirm:
             raise forms.ValidationError("Passwords must be the same")
 
         return password
 
     def save(self):
         account_type = self.cleaned_data["account_type"]
-        del self.cleaned_data["password2"] # Not required for user creation
+        # Remove password_confirm field because it is not a field in the user model
+        self.cleaned_data.pop("password_confirm")
         if account_type == ADMIN:
             return User.objects.create_admin(**self.cleaned_data)
         else:
             return User.objects.create_manager(**self.cleaned_data)
 
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-    
-
-# Admins are not allowed to create SuperAdmin accounts, So this form is used for admin accounts
-
-
+# A form used by admins to register users, their account choices are limited as compared to superadmins
 class AdminCreateUserForm(CreateUserBaseForm):
-    
-    account_type = forms.ChoiceField(label="Account type", choices=admin_account_choices)
+    account_type = forms.ChoiceField(label="Account type", choices=ADMIN_ACCOUNT_CHOICES)
     
     class Meta:
         model = User
@@ -53,15 +50,9 @@ class AdminCreateUserForm(CreateUserBaseForm):
              "phone_no": "Phone number"
          }
 
-
-super_admin_account_choices = (
-    (ADMIN, "Admin"),
-    (MANAGER, "Manager"),
-)
-
 # The super admin can create admins and managers, Use super admin account choices
 class SuperAdminCreateUserForm(CreateUserBaseForm):
-    account_type = forms.ChoiceField(label="Account type", choices=super_admin_account_choices)
+    account_type = forms.ChoiceField(label="Account type", choices=SUPER_ADMIN_ACCOUNT_CHOICES)
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
@@ -69,11 +60,6 @@ class SuperAdminCreateUserForm(CreateUserBaseForm):
 
 
 class EditUserForm(ModelForm):
-
-    def __init__(self, *args, user=None, **kwargs):
-        self.user = user
-        super().__init__(*args, **kwargs)
-
         
     class Meta:
         model = User
@@ -84,7 +70,7 @@ class EditUserForm(ModelForm):
 
 
 class RevokePasswordForm(forms.Form):
-    new_password = PasswordField(label="New password")
+    new_password = forms.CharField(label="New password", widget=forms.PasswordInput)
 
     def __init__(self, *args, user=None, **kwargs):
         self.user = user

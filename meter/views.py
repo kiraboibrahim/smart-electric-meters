@@ -15,70 +15,63 @@ from django.urls import reverse_lazy
 from django.conf import settings
 from django.views import View
 
-from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin, create_meter_manufacturer_hash
+from prepaid_meters_token_generator_system.user_permission_tests import is_admin, is_super_admin, is_admin_or_super_admin
+from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
+from meter.utils import create_meter_manufacturer_hash
 from meter.models import MeterCategory, Meter, Manufacturer, TokenLog
 from meter.externalAPI.meters import MeterAPIFactoryImpl, MeterAPIException
+from meter.externalAPI import post_request_data
 from meter.forms import BuyTokenForm
-from meter import payloads
-
-from transaction.models import Transaction
 
 from user.account_types import MANAGER
-from user.models import PricePerUnit
+from user.models import UnitPrice
 
 # Create your views here.
 User = get_user_model()
 
+
 def get_charges_ugx(meter, gross_amount_ugx):
-    percentage_charge = meter.meter_category.percentage_charge
-    fixed_charge_ugx = meter.meter_category.fixed_charge
+    percentage_charge = meter.category.percentage_charge
+    fixed_charge_ugx = meter.category.fixed_charge
     total_charges_ugx = math.ceil(((percentage_charge / 100) * gross_amount_ugx) + fixed_charge_ugx)
     return total_charges_ugx
+
 
 def get_net_amount_ugx(meter, gross_amount_ugx):
     total_charges_ugx = get_charges_ugx(meter, gross_amount_ugx)
     net_amount_ugx = gross_amount_ugx - total_charges_ugx
     return net_amount_ugx
     
+
 def get_token(meter, gross_amount_ugx):
     net_amount_ugx = get_net_amount_ugx(meter, gross_amount_ugx)
-    num_token_units = math.ceil(net_amount_ugx / meter.manager.priceperunit.price)
-    payload = payloads.GetToken(meter, num_token_units)
-    meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(meter.manufacturer.name))
-    token = meter_api.get_token(payload)
+    num_of_token_units = math.ceil(net_amount_ugx / meter.manager.unit_price.price)
+    
+    token_spec = post_request_data.TokenSpec()
+    token_spec.set_num_of_units(num_of_token_units)
+    token_spec.set_meter(meter)
+    token_spec.set_num_of_units(num_of_token_units)
+    
+    API_id = create_meter_manufacturer_hash(meter.manufacturer.name)
+    meter_API = MeterAPIFactoryImpl.get_API(API_id)
+    token = meter_API.get_token(token_spec)
     return token
 
     
 def log_token(user, meter, token, gross_amount_ugx):
     name = "%s %s" %(user.first_name, user.last_name)
-    token_log = TokenLog.objects.create(name=name, user=user, token_no=token["token"], amount_paid=gross_amount_ugx, num_token_units=token["num_of_units"], meter=meter)
+    token_log = TokenLog.objects.create(name=name, user=user, token_no=token.token_no, amount_paid=gross_amount_ugx, num_of_units=token.num_of_units, meter=meter)
     return token_log
 
-def get_price_category_payload(price_category):
-    return payloads.NewPriceCategory(price_category)
 
-def is_price_category_registered_with_manufacturer(price_category, manufacturer):
-    # Do we have any meters for this manufacturer
-    meters_for_manufacturer = Meter.objects.filter(manufacturer=manufacturer)
-    if meters_for_manufacturer.exists():
-        return True
-    return False
-
-def register_price_category(manufacturer, price_category):
-    if not is_price_category_registered_with_manufacturer(price_category, manufacturer):
-        payload = get_price_category_payload(price_category)
-        meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(manufacturer.name))
-        meter_api.register_price_category(payload)
-
-def get_new_meter_customer_payload(meter, meter_owner):
-    payload = payloads.NewMeterCustomer(meter, meter_owner)
-    return payload
-
-def register_meter_customer(meter, meter_owner):
-    payload = get_new_meter_customer_payload(meter, meter_owner)
-    meter_api = MeterAPIFactoryImpl.create_api(create_meter_manufacturer_hash(meter.manufacturer.name))
-    return meter_api.register_meter_customer(payload)
+def register_meter_customer(customer, meter):
+    customer = post_request_data.MeterCustomer(customer)
+    customer.set_meter(meter)
+    API_id = create_meter_manufacturer_hash(meter.manufacturer.name)
+    meter_API = MeterAPIFactoryImpl.get_API(API_id)
+    return meter_API.register_customer(customer)
     
+
 class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
     template_name = "meter/list_meters.html.development"
     context_object_name = "meters"
@@ -103,7 +96,6 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
         # Register meter with the remote meter api before registering it locally
         meter = Meter(**form.cleaned_data)
         meter_owner = meter.manager
-        price_category = meter.manager.priceperunit
   
         try:
             register_meter_customer(meter, meter_owner)
@@ -122,8 +114,9 @@ class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateV
     success_message = "Changes saved successfully."
 
     def get_success_url(self):
-        url = reverse_lazy("edit_meter", kwarrgs={"pk":self.object.id})
+        url = reverse_lazy("edit_meter", kwargs={"pk":self.object.id})
         return url
+    
     
 class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
     model = MeterCategory
@@ -134,9 +127,8 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
     
     def get_success_message(self, cleaned_data):
         # Make the meter number accessible in the success_message
-        return self.success_message % dict(
-            cleaned_data
-        ) 
+        return self.success_message % dict(cleaned_data) 
+
     
 @user_passes_test(is_admin_or_super_admin)
 def delete_meter(request, pk):
@@ -147,21 +139,21 @@ def delete_meter(request, pk):
     messages.success(request, "Meter has been deleted successfully")
     return redirect("list_meters")
 
+
 def unlink_meter(request, pk):
     num_of_meters_updated = Meter.objects.filter(id=pk).update(manager=None)
+    # Query has updated zero meters, implying the primary key doesnot correspond to any record in the database
     if num_of_meters_updated == 0:
         raise Http404()
     messages.success(request, "Meter has been unlinked successfully")
     return redirect("list_meters")
 
 
-
-
-class BuyToken(View):
+class BuyTokenView(View):
 
     def get(self, request, *args, **kwargs):
-        user_id = kwargs.get("pk")
-        if user_id:
+        meter_id = kwargs.get("pk")
+        if meter_id:
             meter = get_object_or_404(Meter, pk=user_id)
             buy_token_form = BuyTokenForm(initial={"meter_no": meter.meter_no})
         else:
@@ -180,7 +172,7 @@ class BuyToken(View):
             log_token(request.user, meter, token, gross_amount_ugx)
                     
             """ TODO: Send SMS to user with token number """
-            messages.success(request, "Token: %s Units: %s" %(token["token"], token["num_of_units"]))
+            messages.success(request, "Token: %s Units: %s KWH" %(token.token_no, token.num_of_units))
                 
         return render(request, "meter/buy_token.html.development", {"form": buy_token_form})
         

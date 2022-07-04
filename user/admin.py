@@ -1,7 +1,6 @@
 from django.contrib import admin
-from .models import PrepaidMeterUser, PricePerUnit
+from .models import PrepaidMeterUser, UnitPrice
 from django.contrib.auth.admin import UserAdmin
 # Register your models here.
 
-#admin.site.register(PrepaidMeterUser, UserAdmin)
-admin.site.register(PricePerUnit)
+admin.site.register(UnitPrice)

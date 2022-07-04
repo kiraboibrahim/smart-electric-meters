@@ -18,24 +18,26 @@ from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views import View
 
-from meter.utils import is_admin, is_super_admin, is_admin_or_super_admin, SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
+from prepaid_meters_token_generator_system.user_permission_tests import is_admin, is_super_admin, is_admin_or_super_admin
+from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
+
 from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
 from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
 from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
 from user.utils import is_action_allowed
-from user.models import PricePerUnit
+from user.models import UnitPrice
 
 # Create your views here.
 
 User = get_user_model()
 
 
-class PricePerUnitCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
-    model = PricePerUnit
+class UnitPriceCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    model = UnitPrice
     template_name = "user/register_price_per_unit.html.development"
     fields = "__all__"
-    success_url = reverse_lazy("set_price_per_unit")
+    success_url = reverse_lazy("register_unit_price")
     success_message = "Price registered successfully."
     
 

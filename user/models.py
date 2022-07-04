@@ -33,9 +33,9 @@ class PrepaidMeterUser(AbstractUser):
         return "%s %s" %(self.first_name, self.last_name)
 
 
-# The price_per_unit for each manager acccount
-class PricePerUnit(models.Model):
+# The Unit Price for the manager, It applies to all meters owned by the manager
+class UnitPrice(models.Model):
     # CASCADE: Delete the priceperunit associated with the manager once the manager is deleted
-    manager = models.OneToOneField(PrepaidMeterUser, related_name="priceperunit", unique=True, on_delete=models.CASCADE, limit_choices_to={"account_type": MANAGER})
+    manager = models.OneToOneField(PrepaidMeterUser, related_name="unit_price", unique=True, on_delete=models.CASCADE, limit_choices_to={"account_type": MANAGER})
     label = models.CharField(max_length=255, unique=True)
-    price = models.PositiveIntegerField()
+    price = models.PositiveIntegerField(default=1000)

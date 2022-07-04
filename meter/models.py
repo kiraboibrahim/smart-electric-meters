@@ -19,7 +19,7 @@ class MeterCategory(models.Model):
 
 
 class Manufacturer(models.Model):
-    # The name of the manufacturer is strongly coupled to api classes in the api.py, so developers and admins
+    # The name of the manufacturer is strongly coupled to exernal API classes, so developers and admins
     # have to communicate
     name = models.CharField("Manufacturer's Name", max_length=255)
 
@@ -27,13 +27,12 @@ class Manufacturer(models.Model):
         return self.name
     
 class Meter(models.Model):
-    # Meter numbers have a length of 11
     meter_no = models.CharField("Meter Number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.PROTECT)
     # If a manager is deleted, the meter owner will be set NULL ie disowning all from the manager
     manager = models.ForeignKey(User, models.SET_NULL, null=True, blank=True, limit_choices_to={"account_type": MANAGER})
-    # Prevent deletion of meter types if there are still child rows referencing it
-    meter_category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT)
+    # Prevent deletion of meter categories if there are still child rows referencing it
+    category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT)
         
     def __str__(self):
         return self.meter_no
@@ -42,22 +41,13 @@ class Meter(models.Model):
 
 
 class TokenLog(models.Model):
-    # From the decision reached, the name field is not necessary, and thus it is allowed to have NULL values
     name = models.CharField("Purchaser's Name", max_length=255, null=True)
-    # When a user who bought a token is deleted from the database, then all child rows in this table will be set to NULL
     user = models.ForeignKey(User, models.SET_NULL, null=True)
     token_no = models.CharField(max_length=255, unique=True)
-    # Amount of money paid
     amount_paid = models.CharField(max_length=255)
-    # How many token units purchased
-    num_token_units = models.CharField(max_length=255)
-    # Automatically populate with the current date and time 
-    purchased_at = models.DateTimeField(auto_now_add=True)
-    # Meter for which token was generated, I don't see any reason why one would delete a meter that is already
-    # in production, but if that happens and there are still any child rows(token history)  still referencing
-    # a meter, prevent deletion 
+    num_of_units = models.CharField(max_length=255)
+    generated_at = models.DateTimeField(auto_now_add=True)
     meter = models.ForeignKey(Meter, on_delete=models.PROTECT)
-
 
     def __str__(self):
         return self.name

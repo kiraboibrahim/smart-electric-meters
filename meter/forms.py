@@ -4,6 +4,7 @@ from django import forms
 from django.shortcuts import get_object_or_404
 from meter.models import Meter
 
+
 class CreateMeterForm(forms.ModelForm):
 
     class Meta:
@@ -24,8 +25,8 @@ class BuyTokenForm(forms.Form):
         meter_no = self.cleaned_data.get("meter_no")
         amount = self.cleaned_data.get("amount")
         meter = get_object_or_404(Meter, meter_no=meter_no)
-        percentage_charge = meter.meter_category.percentage_charge/100
-        min_amount = math.ceil(meter.meter_category.fixed_charge / (1 - percentage_charge))
+        percentage_charge = meter.category.percentage_charge/100
+        min_amount = math.ceil(meter.category.fixed_charge / (1 - percentage_charge))
 
         if not meter.manager:
             self.add_error("meter_no", "This meter is orphaned. ie It has no manager")

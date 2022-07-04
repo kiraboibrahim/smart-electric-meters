@@ -1,21 +1,17 @@
-# A custom manager for creating users
 from django.contrib.auth.base_user import BaseUserManager
+
 from user.account_types import NONE, SUPER_ADMIN, ADMIN, MANAGER
+
 
 class PrepaidMeterUserManager(BaseUserManager):
     def create_user(self, phone_no, first_name, last_name, address, password=None,  **extra_fields):
-        # If no email has been, It will be None
         extra_fields.setdefault("email")
         if extra_fields["email"]:
             extra_fields["email"] = self.normalize_email(extra_fields["email"])
             
         user = self.model(first_name=first_name, last_name=last_name, phone_no=phone_no, address=address, **extra_fields)
-
         user.set_password(password)
-
-        # Save the user
         user.save()
-    
         return user
 
     
@@ -37,9 +33,8 @@ class PrepaidMeterUserManager(BaseUserManager):
         return user
 
     def create_superuser(self, phone_no, first_name, last_name, address, password=None, **extra_fields):
-        # since account_type is a required field when creating a new user, I am using a NONE account type because superusers are not analogous to super admins
-        extra_fields["accoount_type"] = NONE
-        # This is django's superuser account creation method
+        # Since account_type is a required field when creating a new user, I am using a NONE account type because superusers are not analogous to super admins
+        extra_fields["account_type"] = NONE
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
