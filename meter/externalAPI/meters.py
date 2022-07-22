@@ -78,30 +78,26 @@ class StronPower(MeterAPI):
     ENERGY_METER = 0
     
     def __init__(self):
-        
         self.client_name = "LEGIT-SYSTEMS"
         self.username = settings.STRON_API_USERNAME
         self.password = settings.STRON_API_PWD
         
         self.base_post_data = {
-
             "UserName": self.username,
             "PassWord": self.password,
             "CompanyName": self.client_name
-            
         }
 
     
     def get_customer_endpoint_post_data(self, customer):
-
         post_data = {
             "AccountID": "API-ID",
             "SalesStationID": "API-STATION",
             "CustomerID": customer.get_id(),
             "CustomerName": customer.get_full_name(),
-            "CustomerAddress": customer.address,
-            "CustomerPhone": customer.phone_no,
-            "CustomerEmail": customer.email,
+            "CustomerAddress": customer.get_address(),
+            "CustomerPhone": customer.get_phone_no(),
+            "CustomerEmail": customer.get_email(),
             "PriceCategories": customer.unit_price_label,
             "MeterID": customer.meter.meter_no,
             "MeterType": self.__class__.ENERGY_METER
@@ -146,9 +142,7 @@ class StronPower(MeterAPI):
         return True
 
     def get_token_endpoint_post_data(self, token_spec):
-
         post_data = {
-
             "MeterID": token_spec.get_meter_no(),
             "is_vend_by_unit": "true",
             "Amount": "%s" %(str(token_spec.num_of_units))
