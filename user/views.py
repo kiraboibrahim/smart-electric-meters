@@ -33,12 +33,12 @@ from user.models import UnitPrice
 User = get_user_model()
 
 
-class UnitPriceCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+class UnitPriceEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = UnitPrice
-    template_name = "user/register_price_per_unit.html.development"
     fields = "__all__"
-    success_url = reverse_lazy("register_unit_price")
-    success_message = "Price registered successfully."
+    template_name = "user/register_price_per_unit.html.development"
+    success_message = "Changes saved successfully"
+    success_url = reverse_lazy("list_users")
     
 
 class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
@@ -79,6 +79,15 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
             cleaned_data,
             designation=designation
         )
+
+    def form_valid(self, form):
+        self.object = form.save()
+        user = self.object
+        if user.account_type == MANAGER:
+            # Only managers can a have unitprice field
+            unit_price = UnitPrice.objects.create(manager=user)
+        messages.success(self.request, self.get_success_message(form.cleaned_data))
+        return HttpResponseRedirect(self.get_success_url())
     
     
 
@@ -194,4 +203,4 @@ class ResetPassword(View):
     
 @login_required
 def profile(request):
-    return render(request, "user/profile.html.development")
+    return render(request, "user/dashboard.html.development")
