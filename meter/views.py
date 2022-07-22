@@ -86,19 +86,18 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
     success_message = "Meter: %(meter_no)s registered successfully."
     
     def get_success_message(self, cleaned_data):
-        # Make the meter number accessible in the success_message
         return self.success_message % dict(
             cleaned_data,
             meter_no=self.object.meter_no,
         )
 
     def form_valid(self, form):
-        # Register meter with the remote meter api before registering it locally
+        # Register meter with the manufactures's API before registering it locally in the application
         meter = Meter(**form.cleaned_data)
-        meter_owner = meter.manager
+        meter_customer = meter.manager
   
         try:
-            register_meter_customer(meter, meter_owner)
+            register_meter_customer(meter_customer, meter)
         except MeterAPIException as e:
             messages.error(self.request, "Remote API meter registration failed")
             return super(MeterCreateView, self).form_invalid(form)
@@ -122,39 +121,36 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
     model = MeterCategory
     template_name = "meter/register_meter_category.html.development"
     fields = "__all__"
-    success_url = reverse_lazy("register_meter_category") # change this
+    success_url = reverse_lazy("register_meter_category")
     success_message = "Meter Category: %(label)s registered successfully."
     
     def get_success_message(self, cleaned_data):
-        # Make the meter number accessible in the success_message
+        # Make meter field accessible to the success_message 
         return self.success_message % dict(cleaned_data) 
 
+
+class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Manufacturer
+    template_name = "meter/create_meter.html.development"
+    fields = "__all__"
+    success_url = reverse_lazy("register_meter_manufacturer")
+    success_message = "Meter: %(manufacturer)s has registered successfully ."
     
-@user_passes_test(is_admin_or_super_admin)
-def delete_meter(request, pk):
-    num_of_meters_deleted, deleted_meter = Meter.objects.filter(id=pk).delete()
-    if num_of_meters_deleted == 0:
-        raise Http404("Meter doesnot exist")
+    def get_success_message(self, cleaned_data):
+        # Make the meter number accessible in the success_message
+        return self.success_message % dict(
+            cleaned_data,
+            manufacturer=self.object.name,
+        )
 
-    messages.success(request, "Meter has been deleted successfully")
-    return redirect("list_meters")
-
-
-def unlink_meter(request, pk):
-    num_of_meters_updated = Meter.objects.filter(id=pk).update(manager=None)
-    # Query has updated zero meters, implying the primary key doesnot correspond to any record in the database
-    if num_of_meters_updated == 0:
-        raise Http404()
-    messages.success(request, "Meter has been unlinked successfully")
-    return redirect("list_meters")
-
+    
 
 class BuyTokenView(View):
 
     def get(self, request, *args, **kwargs):
         meter_id = kwargs.get("pk")
         if meter_id:
-            meter = get_object_or_404(Meter, pk=user_id)
+            meter = get_object_or_404(Meter, pk=meter_id)
             buy_token_form = BuyTokenForm(initial={"meter_no": meter.meter_no})
         else:
             buy_token_form = BuyTokenForm()
@@ -176,3 +172,22 @@ class BuyTokenView(View):
                 
         return render(request, "meter/buy_token.html.development", {"form": buy_token_form})
         
+
+
+@user_passes_test(is_admin_or_super_admin)
+def delete_meter(request, pk):
+    num_of_meters_deleted, deleted_meter = Meter.objects.filter(id=pk).delete()
+    if num_of_meters_deleted == 0:
+        raise Http404("Meter doesnot exist")
+
+    messages.success(request, "Meter has been deleted successfully")
+    return redirect("list_meters")
+
+
+def unlink_meter(request, pk):
+    num_of_meters_updated = Meter.objects.filter(id=pk).update(manager=None)
+    # Query has updated zero meters, implying the primary key doesnot correspond to any record in the database
+    if num_of_meters_updated == 0:
+        raise Http404()
+    messages.success(request, "Meter has been unlinked successfully")
+    return redirect("list_meters")
