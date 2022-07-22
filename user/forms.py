@@ -32,8 +32,7 @@ class CreateUserBaseForm(ModelForm):
 
     def save(self):
         account_type = self.cleaned_data["account_type"]
-        # Remove password_confirm field because it is not a field in the user model
-        self.cleaned_data.pop("password_confirm")
+        self.cleaned_data.pop("password_confirm", None)
         if account_type == ADMIN:
             return User.objects.create_admin(**self.cleaned_data)
         else:
