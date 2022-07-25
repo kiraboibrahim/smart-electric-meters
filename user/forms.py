@@ -68,6 +68,25 @@ class EditUserForm(ModelForm):
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
 
 
+class EditUserProfileForm(EditUserForm):
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        if self.user:
+            user_fields = {
+                "first_name": self.user.first_name,
+                "last_name": self.user.last_name,
+                "email": self.user.email,
+                "address": self.user.address,
+                "phone_no": self.user.phone_no,
+            }
+            initial = kwargs.get("initial", {})
+            initial.update(user_fields)
+            kwargs["initial"] = initial
+
+        super(EditUserForm, self).__init__(*args, **kwargs)
+        
+
 class RevokePasswordForm(forms.Form):
     new_password = forms.CharField(label="New password", widget=forms.PasswordInput)
 
@@ -89,3 +108,35 @@ class RevokePasswordForm(forms.Form):
 class ResetPasswordForm(PasswordResetForm):
     email = None
     phone_no = forms.CharField(label="Phone Number", max_length=10)
+
+
+
+class ChangePasswordForm(forms.Form):
+    current_password = forms.CharField(label="Current password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+    new_password = forms.CharField(label="New password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+    new_password_confirmation = forms.CharField(label="New password confirm", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user")
+        super().__init__(*args, **kwargs)
+
+
+    def clean_current_password(self):
+        current_password = self.cleaned_data["current_password"]
+        if not self.user.check_password(current_password):
+            raise forms.ValidationError("Invalid current password")
+        
+    def clean_new_password_confirmation(self):
+        new_password = self.cleaned_data["new_password"]
+        new_password_confirmation = self.cleaned_data["new_password_confirmation"]
+
+        if new_password != new_password_confirmation:
+            raise forms.ValidationError("Passwords must be the same")
+       
+        if password_validation.validate_password(new_password, self.user) is None:
+            return new_password
+
+    def update_password(self):
+        self.user.set_password(self.cleaned_data["new_password"])
+        self.user.save(update_fields=["password"])
+        return self.user

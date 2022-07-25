@@ -21,7 +21,7 @@ class PrepaidMeterUser(AbstractUser):
     # The target clients of the system are not so much of 'email people' 
     email = models.EmailField(unique=True, null=True, blank=True)
     # Phone number is only 10 digits long
-    phone_no = models.CharField(verbose_name="Phone Number", max_length=10, unique=True)
+    phone_no = models.CharField(verbose_name="Phone number", max_length=10, unique=True)
     address = models.CharField(max_length=255)
     account_type = models.PositiveIntegerField(choices=account_choices)
 

@@ -5,6 +5,7 @@ from django.utils.http import urlsafe_base64_encode
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils.encoding import force_bytes
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import user_passes_test, login_required
 from django.contrib import messages
 from django.http import HttpResponse, HttpResponseRedirect
@@ -23,9 +24,9 @@ from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin
 
 from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
-from user.forms import SuperAdminCreateUserForm, EditUserForm, AdminCreateUserForm, RevokePasswordForm, ResetPasswordForm
+from user.forms import SuperAdminCreateUserForm, AdminCreateUserForm, EditUserForm, EditUserProfileForm, RevokePasswordForm, ResetPasswordForm, ChangePasswordForm
 from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
-from user.utils import is_action_allowed
+from user.utils import EDIT, DELETE, is_forbidden_user_model_operation
 from user.models import UnitPrice
 
 # Create your views here.
@@ -93,25 +94,75 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
 
 class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
-    template_name = "user/edit_user.html.development"
     form_class = EditUserForm
     success_message = "Changes saved successfully"
 
     def get_success_url(self):
-        return reverse_lazy("edit_user", kwargs={"pk": self.object.id})
+        return reverse_lazy("list_users")
 
     def post(self, request, *args, **kwargs):
-        
-        user = self.get_object() # The user being edited
+        user_being_edited = self.get_object()
         """
         Prevent admins from deleting fellow admins and super admins and likewise,
         prevent super admins from editing fellow super admins
         """
-        if not is_action_allowed(request.user.account_type, user):
+        edit_user_operation_caller = request.user
+        edit_user_operation_callee = user_being_edited
+        edit_operation = (EDIT, edit_user_operation_caller, edit_user_operation_callee)
+        
+        if is_forbidden_user_model_operation(edit_operation):
             raise PermissionDenied
         
         return super(UserEditView, self).post(request, *args, **kwargs)
 
+
+class UserProfileEditView(LoginRequiredMixin, View):
+    template_name = "user/profile.html.development"
+    
+    def post(self, *args, **kwargs):
+        
+        if self.is_password_update_request(self.request):
+            return self.update_password(self.request.user)
+        return self.update_personal_info(self.request.user)
+
+    def is_password_update_request(self, request):
+        return (request.POST.get("current_password") and request.POST.get("new_password"))
+
+    def update_personal_info(self, user):
+        success_message = "Changes saved successfully"
+        self.edit_user_profile_form = EditUserProfileForm(self.request.POST, instance=user)
+        self.change_password_form = ChangePasswordForm(user=user) # The profile template requires it
+        
+        if self.edit_user_profile_form.is_valid():
+            self.edit_user_profile_form.save()
+            messages.success(self.request, success_message)
+
+        context = self.get_context()
+        return render(self.request, self.template_name, context)
+
+    def update_password(self, user):
+        success_message = "Password succesfully changed"
+        self.edit_user_profile_form = EditUserProfileForm(user=user) # The profile template requires it
+        self.change_password_form = ChangePasswordForm(self.request.POST, user=user)
+
+        if self.change_password_form.is_valid():
+            self.change_password_form.update_password()
+            messages.success(self.request, success_message)
+
+        context = self.get_context()
+        return render(self.request, self.template_name, context)
+
+    def get_context(self):
+        context = {
+            "edit_user_profile_form": self.edit_user_profile_form,
+            "change_password_form": self.change_password_form,
+        }
+        return context
+
+    def get(self, *args, **kwargs):
+        return HttpResponseRedirect(reverse("profile"))
+    
+    
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
     """ 
@@ -141,11 +192,14 @@ def revoke_password(request, pk):
 
 @user_passes_test(is_admin_or_super_admin)
 def delete_user(request, pk):
-    user = get_object_or_404(User, pk=pk)
+    user_to_be_deleted = get_object_or_404(User, pk=pk)
     # Prevent admins from deleting super admin and fellow admin accounts and likewise super admins from deleting fellow super admin accounts
-    if not is_action_allowed(request.user.account_type, user):
+    delete_operation_caller = request.user
+    delete_operation_callee = user_to_be_deleted
+    delete_operation = (DELETE, delete_operation_caller, delete_operation_callee)
+    if is_forbidden_user_model_operation(delete_operation):
         raise PermissionDenied
-    # Delete user 
+    
     user.delete()
     full_name = "%s %s" %(user.first_name, user.last_name)
     messages.success(request, "User: %s deleted successfully" %(full_name))
@@ -202,5 +256,17 @@ class ResetPassword(View):
     
     
 @login_required
-def profile(request):
+def dashboard(request):
     return render(request, "user/dashboard.html.development")
+
+
+@login_required
+def profile(request):
+    user = request.user
+    edit_user_profile_form = EditUserProfileForm(user=user)
+    change_password_form = ChangePasswordForm(user=user)
+    context = {
+        "edit_user_profile_form": edit_user_profile_form,
+        "change_password_form": change_password_form,
+    }
+    return render(request, "user/profile.html.development", context)

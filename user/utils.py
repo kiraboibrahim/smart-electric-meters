@@ -3,6 +3,20 @@ from django.conf import settings
 from django.http import HttpResponse
 from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
 
+EDIT = 1
+DELETE = 2
+
+# Forbidden operations of Administrators and Super Administrators: Format = (caller, callee)
+FORBIDDEN_ADMINS_OPS_ON_USER_MODEL = {
+    EDIT: [
+        (ADMIN, SUPER_ADMIN),
+        (ADMIN, ADMIN),
+        (SUPER_ADMIN, SUPER_ADMIN),
+    ]
+}
+FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[DELETE] = FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[EDIT] 
+
+
 hashids = Hashids(settings.HASHIDS_SALT, min_length=14)
 
 def h_encode(id):
@@ -22,14 +36,11 @@ class HashIdConverter:
 
     def to_url(self, value):
         return h_encode(value)
-
-
-def is_action_allowed(logged_in_user_account_type, target):
     
-    if logged_in_user_account_type == ADMIN and (target.account_type == SUPER_ADMIN or target.account_type == ADMIN):
-        return False
 
-    if logged_in_user_account_type == SUPER_ADMIN and target.account_type == SUPER_ADMIN:
-        return False
+def is_forbidden_user_model_operation(operation):
+    operation_type = operation[0]
+    operation_caller = operation[1]
+    operation_callee = operation[2]
     
-    return True
+    return (operation_caller.account_type, operation_callee.account_type) in FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[opertaion_type]
