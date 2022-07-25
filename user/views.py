@@ -14,7 +14,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
 from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views import View
@@ -26,10 +26,9 @@ from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
 from user.forms import SuperAdminCreateUserForm, AdminCreateUserForm, EditUserForm, EditUserProfileForm, RevokePasswordForm, ResetPasswordForm, ChangePasswordForm
 from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
-from user.utils import EDIT, DELETE, is_forbidden_user_model_operation
+from user.utils import ModelOperations, is_forbidden_user_model_operation, get_users, get_add_user_form_class
 from user.models import UnitPrice
 
-# Create your views here.
 
 User = get_user_model()
 
@@ -47,18 +46,15 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
     context_object_name = "users"
 
     def get_queryset(self):
-        account_type = self.request.user.account_type
-        if account_type == SUPER_ADMIN:
-            return User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
-        else:
-            return User.objects.filter(Q(account_type=MANAGER))
+        logged_in_user = self.request.user
+        return get_users(logged_in_user)
 
     def get_context_data(self, **kwargs):
         context = super(UserListView, self).get_context_data(**kwargs)
-        if self.request.user.account_type == SUPER_ADMIN:
-            context["add_user_form"] = SuperAdminCreateUserForm()
-        else:
-            context["add_user_form"] = AdminCreateUserForm()
+        logged_in_user = self.request.user
+        add_user_form_class = get_add_user_form_class(logged_in_user)
+        context["add_user_form"] = add_user_form_class()
+        
         return context
         
 
@@ -72,38 +68,27 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
         return super(UserCreateView, self).post(*args, **kwargs)
 
     def get_form_class(self):
-        """ 
-        Admins and Super Admins have different privileges in account creation.
-        Admins can create managers only and while super admins can create both admins and managers.
-        The above privileges have been discerned with the use of different forms.
-        """
-        if self.request.user.account_type == SUPER_ADMIN:
-            return SuperAdminCreateUserForm
-        else:
-            return AdminCreateUserForm
+        logged_in_user = self.request.user
+        return get_add_user_form_class(logged_in_user)
 
     def get_success_message(self, cleaned_data):
-        # Make the meter number accessible in the success_message
+        new_user_account_type = cleaned_data["account_type"]
         designation = "Manager"
-        if cleaned_data["account_type"] == ADMIN:
+        if new_user_account_type == ADMIN:
             designation = "Administrator"
+            
         return self.success_message % dict(
             cleaned_data,
             designation=designation
         )
 
     def get_context_data(self, **kwargs):
-        context = super(UserCreateView, self).get_context_data(**kwargs)
-        # list_users template expects a form called add_user_form
+        context= super(UserCreateView, self).get_context_data(**kwargs)
         context["add_user_form"] = context["form"]
 
-        # Add users queryset to the context because the list_users template requires it
-        account_type = self.request.user.account_type
-        if account_type == SUPER_ADMIN:
-            context["users"] = User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
-        else:
-            context["users"] = User.objects.filter(Q(account_type=MANAGER))
-
+        logged_in_user = self.request.user
+        users = get_users(logged_in_user)
+        context["users"] = users
         return context
         
         
@@ -138,7 +123,8 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateVi
         """
         edit_user_operation_caller = request.user
         edit_user_operation_callee = user_being_edited
-        edit_operation = (EDIT, edit_user_operation_caller, edit_user_operation_callee)
+        operation_type = ModelOperations.EDIT
+        edit_operation = (operation_type, edit_user_operation_caller, edit_user_operation_callee)
         
         if is_forbidden_user_model_operation(edit_operation):
             raise PermissionDenied
@@ -192,7 +178,31 @@ class UserProfileEditView(LoginRequiredMixin, View):
     def get(self, *args, **kwargs):
         return HttpResponseRedirect(reverse("profile"))
     
+
+class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
     
+    def get(self, *args, **kwargs):
+        pk = kwargs.get("pk")
+        user_to_be_deleted = get_object_or_404(User, pk=pk)
+        
+        delete_operation_caller = self.request.user
+        delete_operation_callee = user_to_be_deleted
+        operation_type = ModelOperations.DELETE
+        delete_operation = (operation_type, delete_operation_caller, delete_operation_callee)
+        if is_forbidden_user_model_operation(delete_operation):
+            raise PermissionDenied
+
+        user_to_be_deleted.is_active = False # Deactivate the user
+        user_to_be_deleted.save()
+        deleted_user = user_to_be_deleted
+        
+        deleted_user_full_name = "%s %s" %(deleted_user.first_name, deleted_user.last_name)
+        messages.success(self.request, "User: %s deleted successfully" %(deleted_user_full_name))
+
+        return HttpResponseRedirect(reverse("list_users"))
+    
+
+
 @user_passes_test(is_admin_or_super_admin)
 def revoke_password(request, pk):
     """ 
@@ -219,23 +229,7 @@ def revoke_password(request, pk):
         form = RevokePasswordForm()
         return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
 
-
-@user_passes_test(is_admin_or_super_admin)
-def delete_user(request, pk):
-    user_to_be_deleted = get_object_or_404(User, pk=pk)
-    # Prevent admins from deleting super admin and fellow admin accounts and likewise super admins from deleting fellow super admin accounts
-    delete_operation_caller = request.user
-    delete_operation_callee = user_to_be_deleted
-    delete_operation = (DELETE, delete_operation_caller, delete_operation_callee)
-    if is_forbidden_user_model_operation(delete_operation):
-        raise PermissionDenied
     
-    user.delete()
-    full_name = "%s %s" %(user.first_name, user.last_name)
-    messages.success(request, "User: %s deleted successfully" %(full_name))
-    return HttpResponseRedirect(reverse("list_users"))
-
-
 def send_sms(source, destination, message):
     sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
     notification = NotificationImpl(sms_client)

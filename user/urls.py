@@ -1,7 +1,9 @@
 from django.urls import path, register_converter
-from user.views import ResetPassword, UserListView, UserCreateView, UserEditView, UserProfileEditView, UnitPriceEditView, revoke_password, delete_user, dashboard, profile
 from django.contrib.auth import views as auth_views
+
 from user.utils import HashIdConverter
+from user.views import ResetPassword, UserListView, UserCreateView, UserEditView, UserProfileEditView, UnitPriceEditView, UserDeleteView, revoke_password, dashboard, profile
+
 
 register_converter(HashIdConverter, "hashid")
 
@@ -13,7 +15,7 @@ urlpatterns = [
     path("add", UserCreateView.as_view(), name="add_user"),
     path("<hashid:pk>/edit", UserEditView.as_view(), name="edit_user"),
     path("<hashid:pk>/revoke-password", revoke_password, name="revoke_password"),
-    path("<hashid:pk>/delete", delete_user, name="delete_user"),
+    path("<hashid:pk>/delete", UserDeleteView.as_view(), name="delete_user"),
     path("password-change", auth_views.PasswordChangeView.as_view(template_name="user/change_password.html.development"), name="password_change"),
     path("password-change/done", auth_views.PasswordChangeDoneView.as_view(template_name="user/change_password_done.html.development"), name="password_change_done"),
     path("forgot-password", ResetPassword.as_view(), name="forgot_password"),
