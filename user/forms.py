@@ -18,8 +18,8 @@ User = get_user_model()
 
 
 class CreateUserBaseForm(ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput)
-    password_confirm = forms.CharField(label="Confirm password", widget=forms.PasswordInput)
+    password = forms.CharField(widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+    password_confirm = forms.CharField(label="Confirm password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
     field_order = ["first_name", "last_name", "email", "phone_no", "address", "account_type"]
 
     def clean_password_confirm(self):

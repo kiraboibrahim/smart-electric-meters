@@ -43,7 +43,7 @@ class UnitPriceEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Upd
     
 
 class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
-    template_name = "user/list_accounts.html.development"
+    template_name = "user/list_users.html.development"
     context_object_name = "users"
 
     def get_queryset(self):
@@ -52,13 +52,24 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
             return User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
         else:
             return User.objects.filter(Q(account_type=MANAGER))
+
+    def get_context_data(self, **kwargs):
+        context = super(UserListView, self).get_context_data(**kwargs)
+        if self.request.user.account_type == SUPER_ADMIN:
+            context["add_user_form"] = SuperAdminCreateUserForm()
+        else:
+            context["add_user_form"] = AdminCreateUserForm()
+        return context
         
 
 class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
-    template_name = "user/create_user.html.development"
     model = User
-    success_message = "%(designation)s: %(first_name)s %(last_name)s has been registered successfully"
-    success_url = reverse_lazy("create_user")
+    template_name = "user/list_users.html.development"
+    success_message = "%(designation)s: %(first_name)s %(last_name)s has been added successfully"
+    http_method_names = ["post"]
+    
+    def post(self, *args, **kwargs):
+        return super(UserCreateView, self).post(*args, **kwargs)
 
     def get_form_class(self):
         """ 
@@ -81,6 +92,22 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
             designation=designation
         )
 
+    def get_context_data(self, **kwargs):
+        context = super(UserCreateView, self).get_context_data(**kwargs)
+        # list_users template expects a form called add_user_form
+        context["add_user_form"] = context["form"]
+
+        # Add users queryset to the context because the list_users template requires it
+        account_type = self.request.user.account_type
+        if account_type == SUPER_ADMIN:
+            context["users"] = User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
+        else:
+            context["users"] = User.objects.filter(Q(account_type=MANAGER))
+
+        return context
+        
+        
+
     def form_valid(self, form):
         self.object = form.save()
         user = self.object
@@ -88,7 +115,10 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
             # Only managers can a have unitprice field
             unit_price = UnitPrice.objects.create(manager=user)
         messages.success(self.request, self.get_success_message(form.cleaned_data))
-        return HttpResponseRedirect(self.get_success_url())
+        return self.render_to_response(self.get_context_data(form=form))
+
+    def form_invalid(self, form):
+        return self.render_to_response(self.get_context_data(form=form))
     
     
 

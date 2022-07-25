@@ -10,7 +10,7 @@ urlpatterns = [
     path("login", auth_views.LoginView.as_view(template_name="user/login.html.development"), name="login"),
     path("logout", auth_views.LogoutView.as_view(), name="logout"),
     path("prices/<hashid:pk>/edit", UnitPriceEditView.as_view(), name="edit_unit_price"),
-    path("register", UserCreateView.as_view(), name="register_user"),
+    path("add", UserCreateView.as_view(), name="add_user"),
     path("<hashid:pk>/edit", UserEditView.as_view(), name="edit_user"),
     path("<hashid:pk>/revoke-password", revoke_password, name="revoke_password"),
     path("<hashid:pk>/delete", delete_user, name="delete_user"),
