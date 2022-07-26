@@ -109,12 +109,13 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
 
 class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = User
+    template_name = "user/edit_user.html.development"
     form_class = EditUserForm
     success_message = "Changes saved successfully"
 
     def get_success_url(self):
-        return reverse_lazy("list_users")
-
+        return reverse_lazy("edit_user", kwargs={"pk": self.object.id})
+        
     def post(self, request, *args, **kwargs):
         user_being_edited = self.get_object()
         """
