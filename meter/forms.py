@@ -1,38 +1,51 @@
 import math
 
 from django import forms
-from django.shortcuts import get_object_or_404
-from meter.models import Meter
+
+from meter.models import Meter, MeterCategory
 
 
-class CreateMeterForm(forms.ModelForm):
+class AddMeterForm(forms.ModelForm):
 
     class Meta:
         model = Meter
-        fields = "__all__"
+        exclude = ["is_active"]
 
 
-class EditMeterForm(CreateMeterForm):
+class EditMeterForm(AddMeterForm):
     pass
                 
 
-class BuyTokenForm(forms.Form):
+class AddMeterCategoryForm(forms.ModelForm):
+
+    class Meta:
+        model = MeterCategory
+        fields = "__all__"
+        
+        
+class RechargeMeterForm(forms.Form):
     meter_no = forms.CharField(max_length=11, label="Meter Number")
-    amount = forms.IntegerField(help_text="Local tax rates may apply", widget=forms.TextInput(attrs={"type": "number", "placeholder": "5000"}))
-
-
+    amount = forms.IntegerField(widget=forms.TextInput(attrs={"type": "number", "placeholder": "5000"}))
+        
     def clean(self):
+        meter = None
         meter_no = self.cleaned_data.get("meter_no")
         amount = self.cleaned_data.get("amount")
-        meter = get_object_or_404(Meter, meter_no=meter_no)
-        percentage_charge = meter.category.percentage_charge/100
-        min_amount = math.ceil(meter.category.fixed_charge / (1 - percentage_charge))
 
-        if not meter.manager:
-            self.add_error("meter_no", "This meter is orphaned. ie It has no manager")
+        try:
+            meter = Meter.objects.get(meter_no=meter_no)
+        except Meter.DoesNotExist:
+            self.add_error("meter_no", "Meter not found")
+        else:
+            self.meter = meter
+
+            percentage_charge = meter.category.percentage_charge / 100
+            fixed_charge = meter.category.fixed_charge
+            min_amount = math.ceil(fixed_charge / (1 - percentage_charge))
         
-        if amount <= min_amount:
-            self.add_error("amount", "Amount should be greater than %d" %(min_amount))
+            if amount <= min_amount:
+                self.add_error("amount", "Amount should be greater than %d" %(min_amount))
+            
         return self.cleaned_data
 
         
