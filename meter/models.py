@@ -30,9 +30,10 @@ class Meter(models.Model):
     meter_no = models.CharField("Meter Number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.PROTECT)
     # If a manager is deleted, the meter owner will be set NULL ie disowning all from the manager
-    manager = models.ForeignKey(User, models.SET_NULL, null=True, blank=True, limit_choices_to={"account_type": MANAGER})
-    # Prevent deletion of meter categories if there are still child rows referencing it
+    manager = models.ForeignKey(User, on_delete=models.PROTECT, limit_choices_to={"account_type": MANAGER})
+    # Prevent deletion of meter categories if there are still meter child rows referencing it
     category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT)
+    is_active = models.BooleanField(default=True)
         
     def __str__(self):
         return self.meter_no
@@ -41,13 +42,13 @@ class Meter(models.Model):
 
 
 class TokenLog(models.Model):
-    name = models.CharField("Purchaser's Name", max_length=255, null=True)
     user = models.ForeignKey(User, models.SET_NULL, null=True)
+    meter = models.ForeignKey(Meter, on_delete=models.PROTECT)
     token_no = models.CharField(max_length=255, unique=True)
     amount_paid = models.CharField(max_length=255)
     num_of_units = models.CharField(max_length=255)
     generated_at = models.DateTimeField(auto_now_add=True)
-    meter = models.ForeignKey(Meter, on_delete=models.PROTECT)
+    
 
     def __str__(self):
         return self.name
