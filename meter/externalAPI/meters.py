@@ -3,28 +3,18 @@ import abc
 import uuid
 
 from django.conf import settings
-from meter.utils import create_meter_manufacturer_hash
+from meter.utils import get_meter_manufacturer_hash
+
+from .DTOs import Token
 
 meter_APIs = {}
 
+
 def register(cls):
-    """
-    This function registers all meter API classes so that the factory method can easily instantiate the meter APIs
-    """
-    API_id = create_meter_manufacturer_hash(cls.__name__)
+    """Add meter API classes to a dictionary so that the factory class can easily instantiate them """
+    API_id = get_meter_manufacturer_hash(cls.__name__)
     meter_APIs[API_id] = cls
     return cls
-
-class Token:
-
-    def set_token_no(self, token_no):
-        self.token_no = token_no
-
-    def set_num_of_units(self, num_of_units):
-        self.num_of_units = num_of_units
-
-    def set_unit(self, unit):
-        self.unit = unit
 
 class MeterAPI(abc.ABC):
 
@@ -39,26 +29,6 @@ class MeterAPI(abc.ABC):
     @abc.abstractmethod
     def register_unit_price(self, unit_price):
         raise NotImplementedError
-    
-
-class MeterAPIFactory(abc.ABC):
-
-    @abc.abstractmethod
-    def get_API(self, manufacturer):
-        raise NotImplementedError
-
-
-class MeterAPIFactoryImpl(MeterAPIFactory):
-    
-    @classmethod
-    def get_API(cls, manufacturer):
-        API_id = create_meter_manufacturer_hash(manufacturer)
-        meter_API = meter_APIs.get(API_id)()
-        if meter_API is None:
-            raise Exception("API for %s has not been implemented yet" %(manufacturer))
-            
-        return meter_API
-        
 
 
 class MeterAPIException(Exception):
@@ -71,7 +41,26 @@ class MeterAPIException(Exception):
         return "%d: %s" %(self.status_code, self.message)
 
     
-@register
+class MeterAPIFactory(abc.ABC):
+
+    @abc.abstractmethod
+    def get_API(self, manufacturer):
+        raise NotImplementedError
+
+
+class MeterAPIFactoryImpl(MeterAPIFactory):
+    
+    @classmethod
+    def get_API(cls, manufacturer):
+        API_id = get_meter_manufacturer_hash(manufacturer)
+        meter_API = meter_APIs.get(API_id)()
+        if meter_API is None:
+            raise MeterAPIException(0, "API for %s has not been implemented yet" %(manufacturer))
+            
+        return meter_API
+
+
+@register    
 class StronPower(MeterAPI):
 
     BASE_URL = "http://www.server-api.stronpower.com/api"
@@ -158,10 +147,13 @@ class StronPower(MeterAPI):
             generated_token_from_API = API_response.json()[0]
 
             token = Token()
-            token.set_token_no(generated_token_from_API["Token"])
-            token.set_num_of_units(generated_token_from_API["Total_unit"])
-            token.set_unit(generated_token_from_API["Unit"])
-
+            token.meter = token_spec.meter
+            token.buyer = token_spec.buyer
+            token.amount = token_spec.amount
+            token.number = generated_token_from_API["Token"]
+            token.num_of_units = generated_token_from_API["Total_unit"]
+            token.unit = generated_token_from_API["Unit"]
+            
             return token
     
         except IndexError as e:
