@@ -21,7 +21,9 @@ class MeterCategory(models.Model):
 class Manufacturer(models.Model):
     # The name of the manufacturer is strongly coupled to exernal API classes, so developers and admins
     # have to communicate
-    name = models.CharField("Manufacturer's Name", max_length=255)
+    name = models.CharField(max_length=255)
+    telephone_contact = models.CharField(max_length=10)
+    address = models.CharField(max_length=30)
 
     def __str__(self):
         return self.name
