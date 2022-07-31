@@ -2,14 +2,18 @@ import math
 
 from django import forms
 
-from meter.models import Meter, MeterCategory
+from meter import models as meter_models
 
 
 class AddMeterForm(forms.ModelForm):
 
     class Meta:
-        model = Meter
+        model = meter_models.Meter
         exclude = ["is_active"]
+        labels = {
+            "meter_no": "Meter Number",
+        }
+        
 
 
 class EditMeterForm(AddMeterForm):
@@ -19,9 +23,17 @@ class EditMeterForm(AddMeterForm):
 class AddMeterCategoryForm(forms.ModelForm):
 
     class Meta:
-        model = MeterCategory
+        model = meter_models.MeterCategory
         fields = "__all__"
-        
+
+class AddMeterManufacturerForm(forms.ModelForm):
+
+    class Meta:
+        model = meter_models.Manufacturer
+        fields = "__all__"
+        labels = {
+            "name": "Company name",
+        }
         
 class RechargeMeterForm(forms.Form):
     meter_no = forms.CharField(max_length=11, label="Meter Number")
