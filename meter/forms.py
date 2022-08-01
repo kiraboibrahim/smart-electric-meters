@@ -45,8 +45,8 @@ class RechargeMeterForm(forms.Form):
         amount = self.cleaned_data.get("amount")
 
         try:
-            meter = Meter.objects.get(meter_no=meter_no)
-        except Meter.DoesNotExist:
+            meter = meter_models.Meter.objects.get(meter_no=meter_no)
+        except meter_models.Meter.DoesNotExist:
             self.add_error("meter_no", "Meter not found")
         else:
             self.meter = meter

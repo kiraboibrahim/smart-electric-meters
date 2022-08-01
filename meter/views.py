@@ -214,8 +214,9 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
     
 class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Meter
-    template_name = "meter/edit_meter.html.development"
     fields = "__all__"
+    template_name = "meter/edit_meter.html.development"
+    extra_context = {"meters": Meter.objects.all()}
     success_message = "Changes saved successfully."
 
     def get_success_url(self):
@@ -252,7 +253,11 @@ class RechargeMeterView(View):
     def get(self, request, *args, **kwargs):
         pk = kwargs.get("pk")
         form = self.get_recharge_meter_form(pk)
-        return render(request, "meter/recharge_meter.html.development", {"form": form})
+        context = {
+            "form": form,
+            "meters": self.get_meters()
+        }
+        return render(request, "meter/recharge_meter.html.development", context)
 
     def get_recharge_meter_form(self, pk):
         recharge_meter_form = None
@@ -264,6 +269,8 @@ class RechargeMeterView(View):
 
         return recharge_meter_form
         
+    def get_meters(self):
+        return Meter.objects.all()
     
     def post(self, request, *args, **kwargs):
         recharge_meter_form = meter_forms.RechargeMeterForm(request.POST)
@@ -285,8 +292,12 @@ class RechargeMeterView(View):
                     
                 """ TODO: Send SMS to user with token number """
                 messages.success(request, "Token: %s Units: %s KWH" %(token.number, token.num_of_units))
-                
-        return render(request, "meter/recharge_meter.html.development", {"form": recharge_meter_form})
+
+        context = {
+            "form": recharge_meter_form,
+            "meters": self.get_meters(),
+        }
+        return render(request, "meter/recharge_meter.html.development", context)
         
 
 

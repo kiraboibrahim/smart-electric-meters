@@ -115,7 +115,15 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateVi
 
     def get_success_url(self):
         return reverse_lazy("edit_user", kwargs={"pk": self.object.id})
-        
+
+
+    def get_context_data(self, **kwargs):
+        context = super(UserEditView, self).get_context_data(**kwargs)
+        logged_in_user = self.request.user
+        context["users"] = get_users(logged_in_user)
+
+        return context
+    
     def post(self, request, *args, **kwargs):
         user_being_edited = self.get_object()
         """
