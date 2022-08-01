@@ -9,7 +9,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, Http404
 from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.conf import settings
@@ -106,14 +106,33 @@ class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessage
             cleaned_data,
             manufacturer=self.object.name,
         )
+    
+
+class MeterManufacturerEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
+    model = Manufacturer
+    fields = "__all__"
+    template_name = "meter/edit_manufacturer.html.development"
+    extra_context = {"manufacturers": Manufacturer.objects.all()}
+    success_message = "Changes saved successfully."
+
+    def get_success_url(self):
+        url = reverse_lazy("list_meter_manufacturers")
+        return url
+
+    def get_context_data(self, **kwargs):
+        context = super(MeterManufacturerEditView, self).get_context_data(**kwargs)
+        
+        context["edit_meter_manufacturer_form"] = context["form"]
+        
+        return context
 
     
 
 class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
-    model = Meter
+    form_class = meter_forms.AddMeterForm
     template_name = "meter/list_meters.html.development"
-    fields = "__all__"
     success_message = "Meter: %(meter_no)s registered successfully."
+    success_url = reverse_lazy("list_meters")
     http_method_names = ["post"]
     
     def get_success_message(self, cleaned_data):
@@ -132,13 +151,16 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
         context["meters"] = Meter.objects.all()
 
         return context
-
+    
     def form_valid(self, form):
+        is_meter_remotely_registered = form.cleaned_data.pop("is_registered") # Iam using pop() method to remove it from the fields
         meter = Meter(**form.cleaned_data)
         meter_customer = meter.manager
+        
   
         try:
-            register_meter_customer(meter_customer, meter)
+            if not is_meter_remotely_registered:
+                register_meter_customer(meter_customer, meter)
         except MeterAPIException:
             messages.error(self.request, "Registration with the meter manufacturer has failed")
             return super(MeterCreateView, self).form_invalid(form)
@@ -148,8 +170,8 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
     
 class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Meter
-    template_name = "meter/edit_meter.html.development"
     fields = "__all__"
+    template_name = "meter/edit_meter.html.development"
     success_message = "Changes saved successfully."
 
     def get_success_url(self):
@@ -175,43 +197,8 @@ class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
         return context
     
     
-class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
-    model = Meter
-    template_name = "meter/list_meters.html.development"
-    fields = "__all__"
-    success_message = "Meter: %(meter_no)s registered successfully."
-    http_method_names = ["post"]
-    
-    def get_success_message(self, cleaned_data):
-        return self.success_message % dict(
-            cleaned_data,
-            meter_no=self.object.meter_no,
-        )
 
-    def get_context_data(self, **kwargs):
-        context = super(MeterCreateView, self).get_context_data(**kwargs)
-        
-        add_meter_category_form = meter_forms.AddMeterCategoryForm()
-        context["add_meter_form"] = context["form"]
-        context["add_meter_category_form"] = add_meter_category_form
-        
-        context["meters"] = Meter.objects.all()
 
-        return context
-
-    def form_valid(self, form):
-        meter = Meter(**form.cleaned_data)
-        meter_customer = meter.manager
-  
-        try:
-            register_meter_customer(meter_customer, meter)
-        except MeterAPIException:
-            messages.error(self.request, "Registration with the meter manufacturer has failed")
-            return super(MeterCreateView, self).form_invalid(form)
-        
-        return super(MeterCreateView, self).form_valid(form)
-
-    
 class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Meter
     fields = "__all__"

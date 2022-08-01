@@ -6,10 +6,10 @@ from meter import models as meter_models
 
 
 class AddMeterForm(forms.ModelForm):
-
+    is_registered = forms.BooleanField(label="Already registered with manufacturer", required=False)
     class Meta:
         model = meter_models.Meter
-        exclude = ["is_active"]
+        exclude = ("is_active", )
         labels = {
             "meter_no": "Meter Number",
         }
