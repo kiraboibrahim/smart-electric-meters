@@ -18,8 +18,8 @@ User = get_user_model()
 
 
 class CreateUserBaseForm(ModelForm):
-    password = forms.CharField(widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
-    password_confirm = forms.CharField(label="Confirm password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+    password = forms.CharField(widget=forms.PasswordInput)
+    password_confirm = forms.CharField(label="Confirm password", widget=forms.PasswordInput)
     field_order = ["first_name", "last_name", "email", "phone_no", "address", "account_type"]
 
     def clean_password_confirm(self):
@@ -86,24 +86,6 @@ class EditUserProfileForm(EditUserForm):
 
         super(EditUserForm, self).__init__(*args, **kwargs)
         
-
-class RevokePasswordForm(forms.Form):
-    new_password = forms.CharField(label="New password", widget=forms.PasswordInput)
-
-    def __init__(self, *args, user=None, **kwargs):
-        self.user = user
-        super().__init__(*args, **kwargs)
-        
-    def clean_new_password(self):
-        password = self.cleaned_data["new_password"]
-        if password_validation.validate_password(password, self.user) is None:
-            return password
-
-    def revoke_password(self):
-        self.user.set_password(self.cleaned_data["new_password"])
-        self.user.save(update_fields=["password"])
-        return self.user
-        
         
 class ResetPasswordForm(PasswordResetForm):
     email = None
@@ -112,9 +94,9 @@ class ResetPasswordForm(PasswordResetForm):
 
 
 class ChangePasswordForm(forms.Form):
-    current_password = forms.CharField(label="Current password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
-    new_password = forms.CharField(label="New password", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
-    new_password_confirmation = forms.CharField(label="New password confirm", widget=forms.PasswordInput(attrs={"data-toggle": "password"}))
+    current_password = forms.CharField(label="Current password", widget=forms.PasswordInput)
+    new_password = forms.CharField(label="New password", widget=forms.PasswordInput)
+    new_password_confirmation = forms.CharField(label="New password confirm", widget=forms.PasswordInput)
 
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
