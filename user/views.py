@@ -211,32 +211,6 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
 
         return HttpResponseRedirect(reverse("list_users"))
     
-    
-def send_sms(source, destination, message):
-    sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-    notification = NotificationImpl(sms_client)
-    notification.send(source, destination, message)
-                
-
-def get_context_for_password_reset(user):
-    token = default_token_generator.make_token(user)
-    uidb64 = urlsafe_base64_encode(force_bytes(user.id))
-    email = user.email
-    first_name = user.first_name
-
-    # Context for the reset password sms 
-    context = {
-        "site_name": "LEGIT SYSTEMS",
-        "protocol": "http",
-        "domain": "localhost:8000",
-        "uid": uidb64,
-        "token": token,
-        "email": email,
-        "first_name": first_name,
-    }
-    return context
-
-
 
 class ResetPassword(View):
 
@@ -257,13 +231,34 @@ class ResetPassword(View):
             user = User.objects.get(phone_no=phone_no)
             if user and user.email:
                 to_email = user.email
-                context = get_context_for_password_reset(user)
+                context = self.get_context_data(user)
                 message = render_to_string(email_template, context)
-                send_mail(email_subject, message, from_email, [to_email])
+                send_mail(email_subject, message, from_email, [to_email], html_message=message)
                 
             # Donot alert the user about users that donot exist
-            messages.success(self.request, "Email with password reset instructions has been sent.")
+            messages.success(self.request, "Email with password reset instructions has been sent. Please make sure you check your spam folder if you don't see the email.")
             return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
+
+    def get_context_data(self, user):
+        token = default_token_generator.make_token(user)
+        uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+        email = user.email
+        first_name = user.first_name
+    
+        # Context for the reset password sms 
+        context = {
+            "site_name": "Leigt Systems",
+            "protocol": settings.PROTOCOL,
+            "domain": settings.HOST,
+            "uid": uidb64,
+            "token": token,
+            "email": email,
+            "first_name": first_name,
+            "browser_name": "%s %s" %(self.request.user_agent.browser.family, self.request.user_agent.browser.version_string),
+            "operating_system": "%s %s" %(self.request.user_agent.os.family, self.request.user_agent.os.version_string),
+        }
+        return context
+
     
     
 @login_required
