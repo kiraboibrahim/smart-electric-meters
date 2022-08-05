@@ -18,13 +18,14 @@ from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views import View
+from django.core.mail import send_mail
 
 from prepaid_meters_token_generator_system.user_permission_tests import is_admin, is_super_admin, is_admin_or_super_admin
 from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
 
 from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
-from user.forms import SuperAdminCreateUserForm, AdminCreateUserForm, EditUserForm, EditUserProfileForm, RevokePasswordForm, ResetPasswordForm, ChangePasswordForm
+from user.forms import SuperAdminCreateUserForm, AdminCreateUserForm, EditUserForm, EditUserProfileForm, ResetPasswordForm, ChangePasswordForm
 from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
 from user.utils import ModelOperations, is_forbidden_user_model_operation, get_users, get_add_user_form_class
 from user.models import UnitPrice
@@ -210,34 +211,6 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
 
         return HttpResponseRedirect(reverse("list_users"))
     
-
-
-@user_passes_test(is_admin_or_super_admin)
-def revoke_password(request, pk):
-    """ 
-    Revoking a password requires active sessions of admins and super admins 
-    """
-    
-    user = get_object_or_404(User, pk=pk)
-    """
-    Donot allow admins to revoke super admin and fellow admin accounts passwords and likewise stop super 
-    admins from revoking passwords of fellow super admins
-    """
-    if not is_action_allowed(request.user.account_type, user):
-        raise PermissionDenied
-    
-    # Name of account whose password will be revoked
-    full_name = "%s %s" %(user.first_name, user.last_name)
-    if request.method == "POST":
-        form = RevokePasswordForm(request.POST, user=user)
-        if form.is_valid():
-            form.revoke_password()
-            messages.success(request, "Password has been changed.")
-        return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
-    else:
-        form = RevokePasswordForm()
-        return render(request, "user/revoke_password.html.development", {"form": form, "full_name": full_name})
-
     
 def send_sms(source, destination, message):
     sms_client = TwilioSMSClient(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
@@ -248,6 +221,8 @@ def send_sms(source, destination, message):
 def get_context_for_password_reset(user):
     token = default_token_generator.make_token(user)
     uidb64 = urlsafe_base64_encode(force_bytes(user.id))
+    email = user.email
+    first_name = user.first_name
 
     # Context for the reset password sms 
     context = {
@@ -256,6 +231,8 @@ def get_context_for_password_reset(user):
         "domain": "localhost:8000",
         "uid": uidb64,
         "token": token,
+        "email": email,
+        "first_name": first_name,
     }
     return context
 
@@ -270,21 +247,22 @@ class ResetPassword(View):
 
     def post(self, *args, **kwargs):
         reset_password_form = ResetPasswordForm(self.request.POST)
-        message_template = "user/reset_password_sms.txt.development"
+        email_template = "user/reset_password_email.txt.development"
         
         if reset_password_form.is_valid():
             user_id = kwargs.get("pk")
+            email_subject = "Password Reset"
             phone_no = reset_password_form.cleaned_data.get("phone_no")
+            from_email = "harmless_me@protonmail.com"
             user = User.objects.get(phone_no=phone_no)
-            if user:
+            if user and user.email:
+                to_email = user.email
                 context = get_context_for_password_reset(user)
-                message = render_to_string(message_template, context)
-                source = settings.TWILIO_PHONE_NO
-                destination = "%s%s" %("+256", phone_no[1:])
-                send_sms(source, destination, message)
+                message = render_to_string(email_template, context)
+                send_mail(email_subject, message, from_email, [to_email])
                 
             # Donot alert the user about users that donot exist
-            messages.success(self.request, "SMS with password reset instructions has been sent.")
+            messages.success(self.request, "Email with password reset instructions has been sent.")
             return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
     
     

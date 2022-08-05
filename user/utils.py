@@ -1,12 +1,8 @@
-from hashids import Hashids
-from django.conf import settings
-from django.http import HttpResponse
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-
-from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
-from user.forms import AdminCreateUserForm, SuperAdminCreateUserForm
+from user import account_types as user_account_types
+from user import forms as user_forms
 
 
 class ModelOperations:
@@ -16,34 +12,12 @@ class ModelOperations:
 # Forbidden operations of Administrators and Super Administrators: Format = (caller, callee)
 FORBIDDEN_ADMINS_OPS_ON_USER_MODEL = {
     ModelOperations.EDIT: [
-        (ADMIN, SUPER_ADMIN),
-        (ADMIN, ADMIN),
-        (SUPER_ADMIN, SUPER_ADMIN),
+        (user_account_types.ADMIN, user_account_types.SUPER_ADMIN),
+        (user_account_types.ADMIN, user_account_types.ADMIN),
+        (user_account_types.SUPER_ADMIN, user_account_types.SUPER_ADMIN),
     ]
 }
-FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[ModelOperations.DELETE] = FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[ModelOperations.EDIT] 
-
-
-hashids = Hashids(settings.HASHIDS_SALT, min_length=14)
-
-def h_encode(id):
-    return hashids.encode(id)
-
-def h_decode(h):
-    z = hashids.decode(h)
-    if z:
-        return z[0]
-
-
-class HashIdConverter:
-    regex = "[a-zA-Z0-9]{8,}"
-
-    def to_python(self, value):
-        return h_decode(value)
-
-    def to_url(self, value):
-        return h_encode(value)
-    
+FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[ModelOperations.DELETE] = FORBIDDEN_ADMINS_OPS_ON_USER_MODEL[ModelOperations.EDIT]     
 
 def is_forbidden_user_model_operation(operation):
     operation_type = operation[0]
@@ -58,19 +32,19 @@ def get_users(logged_in_user):
     users = None
     
     logged_in_user_account_type = logged_in_user.account_type
-    if logged_in_user_account_type == SUPER_ADMIN:
-        users = User.objects.filter(Q(account_type=MANAGER) | Q(account_type=ADMIN))
+    if logged_in_user_account_type == user_account_types.SUPER_ADMIN:
+        users = User.objects.filter(Q(account_type=user_account_types.MANAGER) | Q(account_type=user_account_types.ADMIN))
     else:
-        users= User.objects.filter(Q(account_type=MANAGER))
+        users= User.objects.filter(Q(account_type=user_account_types.MANAGER))
 
     return users
 
 def get_add_user_form_class(logged_in_user):
     form_class = None
     
-    if logged_in_user.account_type == SUPER_ADMIN:
-        form_class = SuperAdminCreateUserForm
+    if logged_in_user.account_type == user_account_types.SUPER_ADMIN:
+        form_class = user_forms.SuperAdminCreateUserForm
     else:
-        form_class = AdminCreateUserForm
+        form_class = user_forms.AdminCreateUserForm
         
     return form_class
