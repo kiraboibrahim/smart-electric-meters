@@ -91,15 +91,17 @@ class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, Succ
         users = user_utils.get_users(logged_in_user)
         context["users"] = users
         return context
+    
+    """TODO: Fix Bug: Invalid Variable page_obj"""
         
         
 
     def form_valid(self, form):
         self.object = form.save()
         user = self.object
-        if user.account_type == MANAGER:
+        if user.account_type == user_account_types.MANAGER:
             # Only managers can a have unitprice field
-            unit_price = UnitPrice.objects.create(manager=user)
+            unit_price = user_models.UnitPrice.objects.create(manager=user)
         messages.success(self.request, self.get_success_message(form.cleaned_data))
         return self.render_to_response(self.get_context_data(form=form))
 

@@ -3,6 +3,8 @@ import math
 from django import forms
 from django.contrib.auth import get_user_model
 
+from prepaid_meters_token_generator_system.utils.forms import BaseFiltersForm
+from prepaid_meters_token_generator_system.utils.forms import BaseSearchForm
 from meter import models as meter_models
 from user.account_types import MANAGER
 
@@ -43,27 +45,19 @@ class AddMeterManufacturerForm(forms.ModelForm):
             "name": "Company name",
         }
 
-class filters(forms.Form):
+class Filters(BaseFiltersForm):
     manufacturer = forms.ModelChoiceField(queryset=meter_models.Manufacturer.objects.all(), empty_label="All", required=False)
     category = forms.ModelChoiceField(queryset=meter_models.MeterCategory.objects.all(), empty_label="All", required=False)
     manager = forms.ModelChoiceField(queryset=User.objects.all().filter(account_type=MANAGER), empty_label="All", required=False)
     is_active = forms.ChoiceField(label="State", choices=is_active_field_choices, required=False)
-
-    def get_applied_filters(self):
-        if self.cleaned_data.get("category") is None:
-            del self.cleaned_data["category"]
-            
-        if self.cleaned_data.get("manufacturer") is None:
-            del self.cleaned_data["manufacturer"]
-
-        if self.cleaned_data.get("manager") is None:
-            del self.cleaned_data["manager"]
-
-        return self.cleaned_data
         
+
+class SearchForm(BaseSearchForm):
+    model_search_field = "meter_no"
     
 
     
+   
 class RechargeMeterForm(forms.Form):
     meter_no = forms.CharField(max_length=11, label="Meter Number")
     amount = forms.IntegerField(widget=forms.TextInput(attrs={"type": "number", "placeholder": "5000"}))

@@ -39,6 +39,9 @@ class Meter(models.Model):
         
     def __str__(self):
         return self.meter_no
+
+    class Meta:
+        ordering = ["manager"]
     
 
 

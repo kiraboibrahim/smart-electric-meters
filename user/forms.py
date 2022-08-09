@@ -3,14 +3,15 @@ from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import PasswordResetForm  
 from django import forms
 from django.db.models import Q
-from user.account_types import ADMIN, MANAGER
+
+from user import account_types as user_account_types
 
 ADMIN_ACCOUNT_CHOICES = (
-    (MANAGER, "Manager"),
+    (user_account_types.MANAGER, "Manager"),
 )
 SUPER_ADMIN_ACCOUNT_CHOICES = (
-    (ADMIN, "Admin"),
-    (MANAGER, "Manager"),
+    (user_account_types.ADMIN, "Admin"),
+    (user_account_types.MANAGER, "Manager"),
 )
 
 
@@ -31,9 +32,9 @@ class CreateUserBaseForm(ModelForm):
         return password
 
     def save(self):
-        account_type = self.cleaned_data["account_type"]
+        user_account_type = self.cleaned_data["account_type"]
         self.cleaned_data.pop("password_confirm", None)
-        if account_type == ADMIN:
+        if user_account_type == user_account_types.ADMIN:
             return User.objects.create_admin(**self.cleaned_data)
         else:
             return User.objects.create_manager(**self.cleaned_data)
