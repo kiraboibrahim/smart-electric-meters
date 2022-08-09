@@ -13,53 +13,53 @@ from django.db.models import Q
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.core.exceptions import PermissionDenied
-from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic import list as generic_list_views
+from django.views.generic import edit as generic_edit_views
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.views import View
 from django.core.mail import send_mail
 
-from prepaid_meters_token_generator_system.user_permission_tests import is_admin, is_super_admin, is_admin_or_super_admin
-from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
+from prepaid_meters_token_generator_system.utils.mixins import user_permissions as user_permission_mixins
 
 from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
-from user.forms import SuperAdminCreateUserForm, AdminCreateUserForm, EditUserForm, EditUserProfileForm, ResetPasswordForm, ChangePasswordForm
-from user.account_types import SUPER_ADMIN, ADMIN, MANAGER
-from user.utils import ModelOperations, is_forbidden_user_model_operation, get_users, get_add_user_form_class
-from user.models import UnitPrice
+from user import forms as user_forms
+from user import account_types as user_account_types
+from user import utils as user_utils
+from user import models as user_models
 
 
 User = get_user_model()
 
 
-class UnitPriceEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = UnitPrice
+class UnitPriceEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):
+    model = user_models.UnitPrice
     fields = "__all__"
     template_name = "user/register_price_per_unit.html.development"
     success_message = "Changes saved successfully"
     success_url = reverse_lazy("list_users")
     
 
-class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
+class UserListView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, generic_list_views.ListView):
     template_name = "user/list_users.html.development"
     context_object_name = "users"
+    paginate_by = 12;
 
     def get_queryset(self):
         logged_in_user = self.request.user
-        return get_users(logged_in_user)
+        return user_utils.get_users(logged_in_user)
 
     def get_context_data(self, **kwargs):
         context = super(UserListView, self).get_context_data(**kwargs)
         logged_in_user = self.request.user
-        add_user_form_class = get_add_user_form_class(logged_in_user)
+        add_user_form_class = user_utils.get_add_user_form_class(logged_in_user)
         context["add_user_form"] = add_user_form_class()
         
         return context
         
 
-class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
     model = User
     template_name = "user/list_users.html.development"
     success_message = "%(designation)s: %(first_name)s %(last_name)s has been added successfully"
@@ -70,12 +70,12 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
 
     def get_form_class(self):
         logged_in_user = self.request.user
-        return get_add_user_form_class(logged_in_user)
+        return user_utils.get_add_user_form_class(logged_in_user)
 
     def get_success_message(self, cleaned_data):
         new_user_account_type = cleaned_data["account_type"]
         designation = "Manager"
-        if new_user_account_type == ADMIN:
+        if new_user_account_type == user_account_types.ADMIN:
             designation = "Administrator"
             
         return self.success_message % dict(
@@ -88,7 +88,7 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
         context["add_user_form"] = context["form"]
 
         logged_in_user = self.request.user
-        users = get_users(logged_in_user)
+        users = user_utils.get_users(logged_in_user)
         context["users"] = users
         return context
         
@@ -108,10 +108,10 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Create
     
     
 
-class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
+class UserEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):
     model = User
     template_name = "user/edit_user.html.development"
-    form_class = EditUserForm
+    form_class = user_forms.EditUserForm
     success_message = "Changes saved successfully"
 
     def get_success_url(self):
@@ -121,7 +121,7 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateVi
     def get_context_data(self, **kwargs):
         context = super(UserEditView, self).get_context_data(**kwargs)
         logged_in_user = self.request.user
-        context["users"] = get_users(logged_in_user)
+        context["users"] = user_utils.get_users(logged_in_user)
 
         return context
     
@@ -133,10 +133,10 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateVi
         """
         edit_user_operation_caller = request.user
         edit_user_operation_callee = user_being_edited
-        operation_type = ModelOperations.EDIT
+        operation_type = user_utils.ModelOperations.EDIT
         edit_operation = (operation_type, edit_user_operation_caller, edit_user_operation_callee)
         
-        if is_forbidden_user_model_operation(edit_operation):
+        if user_utils.is_forbidden_user_model_operation(edit_operation):
             raise PermissionDenied
         
         return super(UserEditView, self).post(request, *args, **kwargs)
@@ -156,8 +156,8 @@ class UserProfileEditView(LoginRequiredMixin, View):
 
     def update_personal_info(self, user):
         success_message = "Changes saved successfully"
-        self.edit_user_profile_form = EditUserProfileForm(self.request.POST, instance=user)
-        self.change_password_form = ChangePasswordForm(user=user) # The profile template requires it
+        self.edit_user_profile_form = user_forms.EditUserProfileForm(self.request.POST, instance=user)
+        self.change_password_form = user_forms.ChangePasswordForm(user=user) # The profile template requires it
         
         if self.edit_user_profile_form.is_valid():
             self.edit_user_profile_form.save()
@@ -168,8 +168,8 @@ class UserProfileEditView(LoginRequiredMixin, View):
 
     def update_password(self, user):
         success_message = "Password succesfully changed"
-        self.edit_user_profile_form = EditUserProfileForm(user=user) # The profile template requires it
-        self.change_password_form = ChangePasswordForm(self.request.POST, user=user)
+        self.edit_user_profile_form = user_forms.EditUserProfileForm(user=user) # The profile template requires it
+        self.change_password_form = user_forms.ChangePasswordForm(self.request.POST, user=user)
 
         if self.change_password_form.is_valid():
             self.change_password_form.update_password()
@@ -189,7 +189,7 @@ class UserProfileEditView(LoginRequiredMixin, View):
         return HttpResponseRedirect(reverse("profile"))
     
 
-class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
+class UserDeleteView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, View):
     
     def get(self, *args, **kwargs):
         pk = kwargs.get("pk")
@@ -197,9 +197,9 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
         
         delete_operation_caller = self.request.user
         delete_operation_callee = user_to_be_deleted
-        operation_type = ModelOperations.DELETE
+        operation_type = user_utils.ModelOperations.DELETE
         delete_operation = (operation_type, delete_operation_caller, delete_operation_callee)
-        if is_forbidden_user_model_operation(delete_operation):
+        if user_utils.is_forbidden_user_model_operation(delete_operation):
             raise PermissionDenied
 
         user_to_be_deleted.is_active = False # Deactivate the user
@@ -215,12 +215,12 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, View):
 class ResetPassword(View):
 
     def get(self, *args, **kwargs):
-        reset_password_form = ResetPasswordForm()
+        reset_password_form = user_forms.ResetPasswordForm()
         return render(self.request, "user/reset_password.html.development", {"form": reset_password_form})
 
 
     def post(self, *args, **kwargs):
-        reset_password_form = ResetPasswordForm(self.request.POST)
+        reset_password_form = user_forms.ResetPasswordForm(self.request.POST)
         email_template = "user/reset_password_email.txt.development"
         
         if reset_password_form.is_valid():
@@ -269,8 +269,8 @@ def dashboard(request):
 @login_required
 def profile(request):
     user = request.user
-    edit_user_profile_form = EditUserProfileForm(user=user)
-    change_password_form = ChangePasswordForm(user=user)
+    edit_user_profile_form = user_forms.EditUserProfileForm(user=user)
+    change_password_form = user_forms.ChangePasswordForm(user=user)
     context = {
         "edit_user_profile_form": edit_user_profile_form,
         "change_password_form": change_password_form,

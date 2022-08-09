@@ -33,6 +33,9 @@ class PrepaidMeterUser(AbstractUser):
         return "%s %s" %(self.first_name, self.last_name)
 
 
+    class Meta:
+        ordering = ['-date_joined']
+        
 # The Unit Price for the manager, It applies to all meters owned by the manager
 class UnitPrice(models.Model):
     # CASCADE: Delete the unitprice associated with the manager once the manager is deleted

@@ -1,9 +1,16 @@
 import math
 
 from django import forms
+from django.contrib.auth import get_user_model
 
 from meter import models as meter_models
+from user.account_types import MANAGER
 
+User = get_user_model()
+is_active_field_choices = [
+    (1, "Active"),
+    (0, "Inactive"),
+]
 
 class AddMeterForm(forms.ModelForm):
     is_registered = forms.BooleanField(label="Already registered with manufacturer", required=False)
@@ -15,10 +22,10 @@ class AddMeterForm(forms.ModelForm):
         }
         
 
-
 class EditMeterForm(AddMeterForm):
     pass
                 
+
 
 class AddMeterCategoryForm(forms.ModelForm):
 
@@ -26,6 +33,7 @@ class AddMeterCategoryForm(forms.ModelForm):
         model = meter_models.MeterCategory
         fields = "__all__"
 
+        
 class AddMeterManufacturerForm(forms.ModelForm):
 
     class Meta:
@@ -34,7 +42,28 @@ class AddMeterManufacturerForm(forms.ModelForm):
         labels = {
             "name": "Company name",
         }
+
+class filters(forms.Form):
+    manufacturer = forms.ModelChoiceField(queryset=meter_models.Manufacturer.objects.all(), empty_label="All", required=False)
+    category = forms.ModelChoiceField(queryset=meter_models.MeterCategory.objects.all(), empty_label="All", required=False)
+    manager = forms.ModelChoiceField(queryset=User.objects.all().filter(account_type=MANAGER), empty_label="All", required=False)
+    is_active = forms.ChoiceField(label="State", choices=is_active_field_choices, required=False)
+
+    def get_applied_filters(self):
+        if self.cleaned_data.get("category") is None:
+            del self.cleaned_data["category"]
+            
+        if self.cleaned_data.get("manufacturer") is None:
+            del self.cleaned_data["manufacturer"]
+
+        if self.cleaned_data.get("manager") is None:
+            del self.cleaned_data["manager"]
+
+        return self.cleaned_data
         
+    
+
+    
 class RechargeMeterForm(forms.Form):
     meter_no = forms.CharField(max_length=11, label="Meter Number")
     amount = forms.IntegerField(widget=forms.TextInput(attrs={"type": "number", "placeholder": "5000"}))

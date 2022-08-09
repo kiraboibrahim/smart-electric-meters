@@ -5,28 +5,30 @@ import logging
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import user_passes_test, login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse, Http404
-from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic import list as generic_list_views
+from django.views.generic import edit as generic_edit_views
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse_lazy
 from django.conf import settings
 from django.views import View
 
-from prepaid_meters_token_generator_system.user_permission_tests import is_admin, is_super_admin, is_admin_or_super_admin
-from prepaid_meters_token_generator_system.mixins import SuperAdminRequiredMixin, AdminRequiredMixin, AdminOrSuperAdminRequiredMixin
-from meter.utils import get_meter_manufacturer_hash
-from meter.models import MeterCategory, Meter, Manufacturer, TokenLog, Manufacturer
+from prepaid_meters_token_generator_system import user_permission_tests
+from prepaid_meters_token_generator_system.utils.mixins import user_permissions as user_permission_mixins
+from prepaid_meters_token_generator_system.utils import views as custom_generic_views
+
+from meter import utils as meter_utils
+from meter import models as meter_models
 from meter.externalAPI.meters import MeterAPIFactoryImpl, MeterAPIException
 from meter.externalAPI import DTOs as DTO
 from meter import forms as meter_forms
 
-from user.account_types import MANAGER
-from user.models import UnitPrice
+from user import models as user_models
 
-# Create your views here.
+
 User = get_user_model()
 
 
@@ -53,14 +55,14 @@ def get_token(token_spec):
     unit_price = meter.manager.unit_price.price
     num_of_token_units = math.ceil(net_amount / unit_price)
     
-    API_id = get_meter_manufacturer_hash(meter.manufacturer.name)
+    API_id = meter_utils.get_meter_manufacturer_hash(meter.manufacturer.name)
     meter_API = MeterAPIFactoryImpl.get_API(API_id)
     token = meter_API.get_token(token_spec)
     return token
 
     
 def log_token(token):
-    token_log = TokenLog()
+    token_log = meter_models.TokenLog()
     token_log.user = token.buyer
     token_log.token_no = token.number
     token_log.amount = token.amount
@@ -74,15 +76,15 @@ def log_token(token):
 def register_meter_customer(customer, meter):
     customer = DTO.MeterCustomer(customer)
     customer.set_meter(meter)
-    API_id = get_meter_manufacturer_hash(meter.manufacturer.name)
+    API_id = meter_utils.get_meter_manufacturer_hash(meter.manufacturer.name)
     meter_API = MeterAPIFactoryImpl.get_API(API_id)
     return meter_API.register_customer(customer)
 
 
-class MeterManufacturerListView(AdminOrSuperAdminRequiredMixin, ListView):
+class MeterManufacturerListView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, generic_list_views.ListView):
     template_name = "meter/list_manufacturers.html.development"
     context_object_name = "manufacturers"
-    model = Manufacturer
+    model = meter_models.Manufacturer
 
     def get_context_data(self, **kwargs):
         context = super(MeterManufacturerListView, self).get_context_data(**kwargs)
@@ -94,7 +96,7 @@ class MeterManufacturerListView(AdminOrSuperAdminRequiredMixin, ListView):
         return context
 
     
-class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+class MeterManufacturerCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
     form_class = meter_forms.AddMeterManufacturerForm
     template_name = "meter/list_manufacturers.html.development"
     success_url = reverse_lazy("list_meter_manufacturers")
@@ -108,11 +110,11 @@ class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessage
         )
     
 
-class MeterManufacturerEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Manufacturer
+class MeterManufacturerEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):
+    model = meter_models.Manufacturer
     fields = "__all__"
     template_name = "meter/edit_manufacturer.html.development"
-    extra_context = {"manufacturers": Manufacturer.objects.all()}
+    extra_context = {"manufacturers": meter_models.Manufacturer.objects.all()}
     success_message = "Changes saved successfully."
 
     def get_success_url(self):
@@ -128,7 +130,7 @@ class MeterManufacturerEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMi
 
     
 
-class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
+class MeterCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
     form_class = meter_forms.AddMeterForm
     template_name = "meter/list_meters.html.development"
     success_message = "Meter: %(meter_no)s registered successfully."
@@ -148,13 +150,13 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
         context["add_meter_form"] = context["form"]
         context["add_meter_category_form"] = add_meter_category_form
         
-        context["meters"] = Meter.objects.all()
+        context["meters"] = meter_models.Meter.objects.all()
 
         return context
     
     def form_valid(self, form):
         is_meter_remotely_registered = form.cleaned_data.pop("is_registered") # Iam using pop() method to remove it from the fields
-        meter = Meter(**form.cleaned_data)
+        meter = meter_models.Meter(**form.cleaned_data)
         meter_customer = meter.manager
         
   
@@ -168,8 +170,8 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Creat
         return super(MeterCreateView, self).form_valid(form)
 
     
-class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Meter
+class MeterEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):
+    model = meter_models.Meter
     fields = "__all__"
     template_name = "meter/edit_meter.html.development"
     success_message = "Changes saved successfully."
@@ -180,11 +182,28 @@ class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateV
 
     
     
-class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
+class MeterListView(LoginRequiredMixin, custom_generic_views.FiltersListView):
     template_name = "meter/list_meters.html.development"
     context_object_name = "meters"
-    model = Meter
+    model = meter_models.Meter
+    paginate_by = 10
+    filters_form_class = meter_forms.filters
 
+    def get_queryset(self):
+        filters = self.get_filters()
+        queryset = meter_utils.get_meters(self.request).filter(**filters)
+        return queryset
+
+    """
+    def get_filters(self):
+        filters = {}
+        if self.request.GET:
+            filters_form = meter_forms.filters(self.request.GET)
+            if filters_form.is_valid():
+                filters = filters_form.get_applied_filters()
+        return filters
+    """ 
+        
     def get_context_data(self, **kwargs):
         context = super(MeterListView, self).get_context_data(**kwargs)
 
@@ -199,20 +218,23 @@ class MeterListView(AdminOrSuperAdminRequiredMixin, ListView):
     
 
 
-class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
-    model = Meter
+class MeterEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):
+    model = meter_models.Meter
     fields = "__all__"
     template_name = "meter/edit_meter.html.development"
-    extra_context = {"meters": Meter.objects.all()}
     success_message = "Changes saved successfully."
 
     def get_success_url(self):
         url = reverse_lazy("edit_meter", kwargs={"pk":self.object.id})
         return url
+
+    def get_context_data(self, **kwwargs):
+        context = super(MeterEditView, self).get_context_data(**kwargs)
+        context["meters"] = meter_utils.get_meters(self.request)
     
     
-class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
-    model = MeterCategory
+class MeterCategoryCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
+    model = meter_models.MeterCategory
     template_name = "meter/list_meters.html.development"
     fields = "__all__"
     success_url = reverse_lazy("list_meters")
@@ -229,7 +251,7 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
         context["add_meter_category_form"] = context["form"]
         context["add_meter_form"] = add_meter_form
         
-        context["meters"] = Meter.objects.all()
+        context["meters"] = meter_utils.get_meters(self.request)
 
         return context
 
@@ -242,22 +264,19 @@ class RechargeMeterView(View):
         form = self.get_recharge_meter_form(pk)
         context = {
             "form": form,
-            "meters": self.get_meters()
+            "meters": meter_utils.get_meters(request)
         }
         return render(request, "meter/recharge_meter.html.development", context)
 
     def get_recharge_meter_form(self, pk):
         recharge_meter_form = None
         if pk:
-            meter = get_object_or_404(Meter, pk=pk)
+            meter = get_object_or_404(meter_models.Meter, pk=pk)
             recharge_meter_form = meter_forms.RechargeMeterForm(initial={"meter_no": meter.meter_no})
         else:
             recharge_meter_form = meter_forms.RechargeMeterForm()
 
         return recharge_meter_form
-        
-    def get_meters(self):
-        return Meter.objects.all()
     
     def post(self, request, *args, **kwargs):
         recharge_meter_form = meter_forms.RechargeMeterForm(request.POST)
@@ -282,15 +301,15 @@ class RechargeMeterView(View):
 
         context = {
             "form": recharge_meter_form,
-            "meters": self.get_meters(),
+            "meters": meter_utils.get_meters(request),
         }
         return render(request, "meter/recharge_meter.html.development", context)
         
 
 
-@user_passes_test(is_admin_or_super_admin)
+@user_passes_test(user_permission_tests.is_admin_or_super_admin)
 def deactivate_meter(request, pk):
-    meter = get_object_or_404(Meter, pk=pk)
+    meter = get_object_or_404(meter_models.Meter, pk=pk)
     meter.is_active = False
     meter.save()
     
