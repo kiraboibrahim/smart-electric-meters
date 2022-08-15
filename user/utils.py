@@ -1,8 +1,8 @@
 from django.db.models import Q
 from django.contrib.auth import get_user_model
 
-from user import account_types as user_account_types
-from user import forms as user_forms
+import user.account_types as user_account_types
+import user.forms as user_forms
 
 
 class ModelOperations:
@@ -48,3 +48,18 @@ def get_add_user_form_class(logged_in_user):
         form_class = user_forms.AdminCreateUserForm
         
     return form_class
+
+def get_list_users_template_context_data(request, base_context={}):
+    logged_in_user = request.user
+        
+    add_user_form_class = get_add_user_form_class(logged_in_user)
+    add_user_form = add_user_form_class()
+    search_form = user_forms.SearchForm()
+    users = get_users(logged_in_user)
+        
+    base_context.setdefault("add_user_form", add_user_form)
+    base_context.setdefault("search_form", search_form)
+    base_context.setdefault("users", users)
+        
+    return base_context
+        
