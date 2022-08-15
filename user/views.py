@@ -21,6 +21,7 @@ from django.views import View
 from django.core.mail import send_mail
 
 from prepaid_meters_token_generator_system.utils.mixins import user_permissions as user_permission_mixins
+from prepaid_meters_token_generator_system.utils import views as custom_generic_views
 
 from meter.externalAPI.notifications import NotificationImpl, TwilioSMSClient
 
@@ -44,21 +45,31 @@ class UnitPriceEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, S
 class UserListView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, generic_list_views.ListView):
     template_name = "user/list_users.html.development"
     context_object_name = "users"
-    paginate_by = 12;
+    paginate_by = settings.MAX_ITEMS_PER_PAGE;
 
     def get_queryset(self):
         logged_in_user = self.request.user
-        return user_utils.get_users(logged_in_user)
-
-    def get_context_data(self, **kwargs):
-        context = super(UserListView, self).get_context_data(**kwargs)
-        logged_in_user = self.request.user
-        add_user_form_class = user_utils.get_add_user_form_class(logged_in_user)
-        context["add_user_form"] = add_user_form_class()
+        qs = user_utils.get_users(logged_in_user)
+        return qs
         
+    def get_context_data(self, **kwargs):
+        base_context = super(UserListView, self).get_context_data(**kwargs)
+        context = user_utils.get_list_users_template_context_data(self.request, base_context)
         return context
         
-
+    
+class UserSearchView(custom_generic_views.SearchListView):
+    model = User
+    template_name = "user/list_users.html.development"
+    context_object_name = "users"
+    search_form_class = user_forms.SearchForm
+    
+    def get_context_data(self, **kwargs):
+        base_context = super(UserSearchView, self).get_context_data(**kwargs)
+        context = user_utils.get_list_users_template_context_data(self.request, base_context)
+        return context
+        
+    
 class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
     model = User
     template_name = "user/list_users.html.development"
@@ -84,18 +95,14 @@ class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, Succ
         )
 
     def get_context_data(self, **kwargs):
-        context= super(UserCreateView, self).get_context_data(**kwargs)
-        context["add_user_form"] = context["form"]
-
-        logged_in_user = self.request.user
-        users = user_utils.get_users(logged_in_user)
-        context["users"] = users
+        base_context = super(UserCreateView, self).get_context_data(**kwargs)
+        context = user_utils.get_list_users_template_context_data(self.request, base_context)
         return context
     
-    """TODO: Fix Bug: Invalid Variable page_obj"""
+    """TODO: Fix Bug: Invalid Variable page_obj
+    Cause: This view doesnot have a paginator 
+    """     
         
-        
-
     def form_valid(self, form):
         self.object = form.save()
         user = self.object

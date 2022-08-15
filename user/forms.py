@@ -4,6 +4,8 @@ from django.contrib.auth.forms import PasswordResetForm
 from django import forms
 from django.db.models import Q
 
+from prepaid_meters_token_generator_system.utils.forms import BaseSearchForm
+
 from user import account_types as user_account_types
 
 ADMIN_ACCOUNT_CHOICES = (
@@ -123,3 +125,7 @@ class ChangePasswordForm(forms.Form):
         self.user.set_password(self.cleaned_data["new_password"])
         self.user.save(update_fields=["password"])
         return self.user
+
+
+class SearchForm(BaseSearchForm):
+    model_search_field = "first_name"

@@ -144,13 +144,8 @@ class MeterCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, Suc
         )
 
     def get_context_data(self, **kwargs):
-        context = super(MeterCreateView, self).get_context_data(**kwargs)
-        
-        add_meter_category_form = meter_forms.AddMeterCategoryForm()
-        context["add_meter_form"] = context["form"]
-        context["add_meter_category_form"] = add_meter_category_form
-        
-        context["meters"] = meter_models.Meter.objects.all()
+        base_context = super(MeterCreateView, self).get_context_data(**kwargs)
+        context = meter_utils.get_list_meters_template_context_data(self.request, base_context)
 
         return context
     
@@ -187,32 +182,28 @@ class MeterListView(LoginRequiredMixin, custom_generic_views.FiltersListView):
     context_object_name = "meters"
     model = meter_models.Meter
     paginate_by = settings.MAX_ITEMS_PER_PAGE
+    
     filters_form_class = meter_forms.Filters
-
-    def get_queryset(self):
-        filters = self.get_filters()
-        queryset = meter_utils.get_meters(self.request).filter(**filters)
-        return queryset 
         
     def get_context_data(self, **kwargs):
-        context = super(MeterListView, self).get_context_data(**kwargs)
-
-        add_meter_form = meter_forms.AddMeterForm()
-        add_meter_category_form = meter_forms.AddMeterCategoryForm()
-        search_form = meter_forms.SearchForm()
-        
-        context["add_meter_form"] = add_meter_form
-        context["add_meter_category_form"] = add_meter_category_form
-        context["search_form"] = search_form
-        
-        return context
+        base_context = super(MeterListView, self).get_context_data(**kwargs)
+        return meter_utils.get_list_meters_template_context_data(self.request, base_context) 
     
     
-class MeterSearchView(custom_generic_views.SearchListView, MeterListView):
+class MeterSearchView(custom_generic_views.SearchListView):
+    template_name = "meter/list_meters.html.development"
     model = meter_models.Meter
+    context_object_name = "meters"
     http_method_names = ["get"]
+    paginate_by = settings.MAX_ITEMS_PER_PAGE
     filters_form_class = meter_forms.Filters
     search_form_class = meter_forms.SearchForm
+
+    def get_context_data(self, **kwargs):
+        base_context = super(MeterSearchView, self).get_context_data(**kwargs)
+        context = meter_utils.get_list_meters_template_context_data(self.request, base_context)
+        return context
+    
 
     
 class MeterEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.UpdateView):

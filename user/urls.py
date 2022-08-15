@@ -11,6 +11,7 @@ urlpatterns = [
     path("", user_views.UserListView.as_view(), name="list_users"),
     path("login", auth_views.LoginView.as_view(template_name="user/login.html.development"), name="login"),
     path("logout", auth_views.LogoutView.as_view(), name="logout"),
+    path("search", user_views.UserSearchView.as_view(), name="search_users"),
     path("prices/<hashid:pk>/edit", user_views.UnitPriceEditView.as_view(), name="edit_unit_price"),
     path("add", user_views.UserCreateView.as_view(), name="add_user"),
     path("<hashid:pk>/edit", user_views.UserEditView.as_view(), name="edit_user"),
