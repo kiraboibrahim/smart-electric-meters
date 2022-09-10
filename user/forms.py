@@ -8,6 +8,7 @@ from prepaid_meters_token_generator_system.utils.forms import BaseSearchForm
 
 from user import account_types as user_account_types
 
+
 ADMIN_ACCOUNT_CHOICES = (
     (user_account_types.MANAGER, "Manager"),
 )
@@ -127,5 +128,5 @@ class ChangePasswordForm(forms.Form):
         return self.user
 
 
-class SearchForm(BaseSearchForm):
-    model_search_field = "first_name"
+class SearchUserForm(forms.Form):
+    query = forms.CharField(required=False)

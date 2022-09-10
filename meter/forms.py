@@ -3,12 +3,17 @@ import math
 from django import forms
 from django.contrib.auth import get_user_model
 
-from prepaid_meters_token_generator_system.utils.forms import BaseFiltersForm
-from prepaid_meters_token_generator_system.utils.forms import BaseSearchForm
-from meter import models as meter_models
 from user.account_types import MANAGER
 
+from meter.models import Meter
+
+from meter_category.models import MeterCategory
+
+from meter_manufacturer.models import MeterManufacturer
+
+
 User = get_user_model()
+
 is_active_field_choices = [
     (1, "Active"),
     (0, "Inactive"),
@@ -17,43 +22,28 @@ is_active_field_choices = [
 class AddMeterForm(forms.ModelForm):
     is_registered = forms.BooleanField(label="Already registered with manufacturer", required=False)
     class Meta:
-        model = meter_models.Meter
+        model = Meter
         exclude = ("is_active", )
         labels = {
             "meter_no": "Meter Number",
         }
         
 
+        
 class EditMeterForm(AddMeterForm):
     pass
                 
 
 
-class AddMeterCategoryForm(forms.ModelForm):
-
-    class Meta:
-        model = meter_models.MeterCategory
-        fields = "__all__"
-
-        
-class AddMeterManufacturerForm(forms.ModelForm):
-
-    class Meta:
-        model = meter_models.Manufacturer
-        fields = "__all__"
-        labels = {
-            "name": "Company name",
-        }
-
-class Filters(BaseFiltersForm):
-    manufacturer = forms.ModelChoiceField(queryset=meter_models.Manufacturer.objects.all(), empty_label="All", required=False)
-    category = forms.ModelChoiceField(queryset=meter_models.MeterCategory.objects.all(), empty_label="All", required=False)
+class MeterFiltersForm(forms.Form):
+    manufacturer = forms.ModelChoiceField(queryset=MeterManufacturer.objects.all(), empty_label="All", required=False)
+    category = forms.ModelChoiceField(queryset=MeterCategory.objects.all(), empty_label="All", required=False)
     manager = forms.ModelChoiceField(queryset=User.objects.all().filter(account_type=MANAGER), empty_label="All", required=False)
     is_active = forms.ChoiceField(label="State", choices=is_active_field_choices, required=False)
         
 
-class SearchForm(BaseSearchForm):
-    model_search_field = "meter_no"
+class SearchMeterForm(forms.Form):
+    query = forms.CharField(required=False)
     
 
     
@@ -69,13 +59,12 @@ class RechargeMeterForm(forms.Form):
 
         try:
             meter = meter_models.Meter.objects.get(meter_no=meter_no)
-        except meter_models.Meter.DoesNotExist:
+        except Meter.DoesNotExist:
             self.add_error("meter_no", "Meter not found")
         else:
             self.meter = meter
 
-            percentage_charge = meter.category.percentage_charge / 100
-            fixed_charge = meter.category.fixed_charge
+            percentage_charge, fixed_charge = meter.category.charges
             min_amount = math.ceil(fixed_charge / (1 - percentage_charge))
         
             if amount <= min_amount:

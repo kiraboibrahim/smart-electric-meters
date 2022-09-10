@@ -20,6 +20,8 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.core.mail import send_mail
 
+from search_views.filters import build_q
+
 from prepaid_meters_token_generator_system.utils.mixins import user_permissions as user_permission_mixins
 from prepaid_meters_token_generator_system.utils import views as custom_generic_views
 
@@ -29,7 +31,7 @@ from user import forms as user_forms
 from user import account_types as user_account_types
 from user import utils as user_utils
 from user import models as user_models
-
+from user.filters import UserSearchFilter
 
 User = get_user_model()
 
@@ -45,7 +47,7 @@ class UnitPriceEditView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, S
 class UserListView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, generic_list_views.ListView):
     template_name = "user/list_users.html.development"
     context_object_name = "users"
-    paginate_by = settings.MAX_ITEMS_PER_PAGE;
+    model = User
 
     def get_queryset(self):
         logged_in_user = self.request.user
@@ -56,19 +58,25 @@ class UserListView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, generi
         base_context = super(UserListView, self).get_context_data(**kwargs)
         context = user_utils.get_list_users_template_context_data(self.request, base_context)
         return context
-        
+
     
-class UserSearchView(custom_generic_views.SearchListView):
+class UserSearchView(generic_list_views.ListView, generic_edit_views.FormMixin):
     model = User
-    template_name = "user/list_users.html.development"
+    template_name = "user/search_users.html.development"
     context_object_name = "users"
-    search_form_class = user_forms.SearchForm
-    
+    http_method_names = ["get"]
+    form_class = user_forms.SearchUserForm
+    filters_class = UserSearchFilter
+
+    def get_queryset(self):
+        search_query = build_q(self.filters_class.get_search_fields(), self.request.GET)
+        qs = user_utils.get_users(self.request.user).filter(search_query)
+        return qs
+        
     def get_context_data(self, **kwargs):
         base_context = super(UserSearchView, self).get_context_data(**kwargs)
         context = user_utils.get_list_users_template_context_data(self.request, base_context)
         return context
-        
     
 class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, generic_edit_views.CreateView):
     model = User
@@ -99,9 +107,6 @@ class UserCreateView(user_permission_mixins.AdminOrSuperAdminRequiredMixin, Succ
         context = user_utils.get_list_users_template_context_data(self.request, base_context)
         return context
     
-    """TODO: Fix Bug: Invalid Variable page_obj
-    Cause: This view doesnot have a paginator 
-    """     
         
     def form_valid(self, form):
         self.object = form.save()

@@ -1,7 +1,16 @@
 from django.contrib import admin
-from user.models import PrepaidMeterUser, UnitPrice
 from django.contrib.auth.admin import UserAdmin
-# Register your models here.
+from django.contrib.auth import get_user_model
 
+from user.models import UnitPrice
+
+User = get_user_model()
+
+
+class CustomUserAdmin(UserAdmin):
+    model = User
+    ordering = ["-date_joined"]
+
+    
 admin.site.register(UnitPrice)
-admin.site.register(PrepaidMeterUser)
+admin.site.register(User)

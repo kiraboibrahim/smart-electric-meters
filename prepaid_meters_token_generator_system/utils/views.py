@@ -39,18 +39,24 @@ class FiltersListView(ListView):
             filters_form = self.filters_form
         return filters_form
 
-    def get_request_parameter_string(self):
+    def get_filter_parameters_string(self):
         filters_form = self.get_filters_form()
-        request_parameter_string = filters_form.get_request_parameter_string()
-        return request_parameter_string
+        filter_parameters_string = filters_form.get_request_parameters_string()
+        return filter_parameters_string
+
+    def get_pagination_base_url(self):
+        filter_parameters_string = self.get_filter_parameters_string()
+        if filter_parameters_string:
+            return "{}?{}".format(self.request.path, filter_parameters_string)
+        else:
+            return self.request.path
         
     def get_context_data(self, **kwargs):
         context = super(FiltersListView, self).get_context_data(**kwargs)
         filters_form = self.get_filters_form()
-        request_parameter_string = self.get_request_parameter_string()
 
         context["filters_form"] = filters_form
-        context["request_parameter_string"] = request_parameter_string
+        context["pagination_base_url"] = self.get_pagination_base_url()
         
         return context
 
@@ -96,15 +102,23 @@ class SearchListView(ListView):
         return qs
 
 
-    def get_request_parameter_string(self):
-        request_parameter_string = self.search_form.get_request_parameter_string()
-
+    def get_filter_parameters_string(self):
+        filter_parameters_string = ""
         if self.filters_form is not None:
-            request_parameter_string_for_filters = self.filters_form.get_request_parameter_string()
-            if request_parameter_string_for_filters:
-                request_parameter_string = "{}&{}".format(request_parameter_string, request_parameter_string_for_filters)
-        return request_parameter_string
+            filter_parameters_string = self.filters_form.get_request_parameters_string()
+        return filter_parameters_string
 
+    def get_query_string(self):
+        query = self.request.GET.get("q")
+        return "q={}".format(query)
+
+    def get_pagination_base_url(self):
+        query_string = self.get_query_string()
+        pagination_base_url = "{}?{}".format(self.request.path, query_string)
+        filter_parameters_string = self.get_filter_parameters_string() # Do we have filters applied on the search results
+        if filter_parameters_string:
+            pagination_base_url = "{}&{}".format(pagination_base_url, filter_parameters_string)
+        return pagination_base_url
         
     def get_context_data(self, **kwargs):
         context = super(SearchListView, self).get_context_data(**kwargs)
@@ -116,6 +130,6 @@ class SearchListView(ListView):
 
         context["search_form"] = self.search_form
         context["filters_form"] = filters_form
-        context["request_parameter_string"] = self.get_request_parameter_string()
+        context["pagination_base_url"] = self.get_pagination_base_url()
         
         return context

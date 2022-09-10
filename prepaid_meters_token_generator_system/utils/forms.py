@@ -1,33 +1,37 @@
 
 from django import forms
 from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 
 class BaseForm(forms.Form):
-    
-     def get_request_parameter_string(self):
-        request_parameter_items = []
-        
-        if self.is_valid():    
-            for field in self.cleaned_data:
-                field_value = self.cleaned_data[field]
-                if field_value is None or field_value == '':
-                    continue
-                request_parameter_items.append("{}={}".format(field, field_value))
 
-        return "&".join(request_parameter_items)
+     def get_request_parameters_string(self):
+          request_parameter_items = []
+          if self.is_valid():
+               for field in self.cleaned_data:
+                    field_value = self.cleaned_data[field]
+                    if field_value is None or field_value == '':
+                         continue
+
+                    if isinstance(field_value, models.Model):
+                         field_value = field_value.id
+                         
+                    request_parameter_items.append("{}={}".format(field, field_value))
+
+          return "&".join(request_parameter_items)
 
 
     
 class BaseFiltersForm(BaseForm):
 
-    def get_filters(self):
-        filters = {}
-        if self.is_valid():
-            for field, value in self.cleaned_data.items():
-                if value is None or value == '':
-                    continue
-                filters[field] = value
-        return filters
+     def get_filters(self):
+          filters = {}
+          if self.is_valid():
+               for field, value in self.cleaned_data.items():
+                    if value is None or value == '':
+                         continue
+                    filters[field] = value
+          return filters
     
 
 
