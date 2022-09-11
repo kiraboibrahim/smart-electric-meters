@@ -10,9 +10,15 @@ User = get_user_model()
 class Payment(models.Model):
     user = models.ForeignKey(User, models.SET_NULL, null=True)
     amount_paid = models.CharField(max_length=255)
-    charges_ugx = models.CharField(max_length=255)
+    charges = models.CharField(max_length=255)
     paid_at = models.DateTimeField(auto_now_add=True)
+    meter_no = models.CharField(max_length=11)
+    num_of_units = models.CharField(max_length=255)
 
+    @property
+    def payer_phone_no(self):
+        return self.user.full_name
+        
     def __str__(self):
         return "%s paid %s".format(self.user.fullname, self.amount_paid)
 
