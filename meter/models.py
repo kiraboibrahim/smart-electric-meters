@@ -10,7 +10,7 @@ User = get_user_model()
 
     
 class Meter(models.Model):
-    meter_no = models.CharField("Meter Number", max_length=11, unique=True)
+    meter_no = models.CharField("Meter number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(MeterManufacturer, on_delete=models.PROTECT, related_name="meters")
     manager = models.ForeignKey(User, on_delete=models.PROTECT, limit_choices_to={"account_type": user_account_types.MANAGER}, null=True, blank=True, related_name="meters")
     category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters")

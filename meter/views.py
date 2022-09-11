@@ -77,12 +77,11 @@ class MeterListView(LoginRequiredMixin, ListView):
         return get_list_meters_template_context_data(self.request, base_context) 
     
     
-class MeterSearchView(ListView, FormMixin):
+class MeterSearchView(LoginRequiredMixin, ListView):
     model = Meter
     template_name = "meter/search_meters.html.development"
     context_object_name = "meters"
     http_method_names = ["get"]
-    form_class = SearchMeterForm
     filters_class = MeterSearchFilter
 
     def get_queryset(self):
