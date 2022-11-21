@@ -6,7 +6,7 @@ import user.account_types as user_account_types
 
 
 account_choices = [
-    (user_account_types.NONE, "None"),
+    (user_account_types.DJANGO_SUPERUSER, "None"),
     (user_account_types.SUPER_ADMIN, "Super Admin"),
     (user_account_types.ADMIN, "Admin"),
     (user_account_types.MANAGER, "Manager"),
@@ -30,17 +30,17 @@ class User(AbstractUser):
 
     @property
     def fullname(self):
-        return "%s %s" %(self.first_name, self.last_name)
+        return "%s %s" % (self.first_name, self.last_name)
         
     def __str__(self):
         return self.fullname
-
 
     class Meta:
         ordering = ['-date_joined']
 
 
 class UnitPrice(models.Model):
-    manager = models.OneToOneField(User, related_name="unit_price", unique=True, on_delete=models.CASCADE, limit_choices_to={"account_type": user_account_types.MANAGER})
+    manager = models.OneToOneField(User, related_name="unit_price", unique=True, on_delete=models.CASCADE,
+                                   limit_choices_to={"account_type": user_account_types.MANAGER})
     label = models.CharField(default="API-STANDARD", max_length=255)
     price = models.PositiveIntegerField(default=1000)

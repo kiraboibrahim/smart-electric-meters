@@ -1,7 +1,7 @@
 from django.urls import path, register_converter
 from django.contrib.auth import views as auth_views
 
-from prepaid_meters_token_generator_system.utils.converters import HashIdConverter
+from prepaid_meters_token_generator_system.converters import HashIdConverter
 from user import views as user_views
 
 
@@ -16,11 +16,20 @@ urlpatterns = [
     path("add", user_views.UserCreateView.as_view(), name="add_user"),
     path("<hashid:pk>/edit", user_views.UserEditView.as_view(), name="edit_user"),
     path("<hashid:pk>/delete", user_views.UserDeleteView.as_view(), name="delete_user"),
-    path("password-change", auth_views.PasswordChangeView.as_view(template_name="user/change_password.html.development"), name="password_change"),
-    path("password-change/done", auth_views.PasswordChangeDoneView.as_view(template_name="user/change_password_done.html.development"), name="password_change_done"),
+    path("password-change",
+         auth_views.PasswordChangeView.as_view(template_name="user/change_password.html.development"),
+         name="password_change"),
+    path("password-change/done",
+         auth_views.PasswordChangeDoneView.as_view(template_name="user/change_password_done.html.development"),
+         name="password_change_done"),
     path("forgot-password", user_views.ResetPassword.as_view(), name="forgot_password"),
-    path("reset-password-confirm/<uidb64>/<token>", auth_views.PasswordResetConfirmView.as_view(template_name="user/reset_password_confirm.html.development"), name="password_reset_confirm"),
-    path("reset-password-complete", auth_views.PasswordResetCompleteView.as_view(template_name="user/reset_password_complete.html.development"), name="password_reset_complete"),
+    path("reset-password-confirm/<uidb64>/<token>",
+         auth_views.PasswordResetConfirmView.as_view(template_name="user/reset_password_confirm.html.development"),
+         name="password_reset_confirm"),
+    path("reset-password-complete",
+         auth_views.PasswordResetCompleteView.as_view(template_name="user/reset_password_complete.html.development"),
+         name="password_reset_complete"),
+    path("password-update", user_views.ChangePasswordView.as_view(), name="password_update"),
     path("dashboard", user_views.dashboard, name="dashboard"),
     path("profile", user_views.profile, name="profile"),
     path("profile/edit", user_views.UserProfileEditView.as_view(), name="edit_user_profile"),

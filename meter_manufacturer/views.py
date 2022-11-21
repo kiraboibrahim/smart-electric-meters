@@ -7,7 +7,7 @@ from django.http import HttpResponseRedirect
 
 from search_views.filters import build_q
 
-from prepaid_meters_token_generator_system.utils.mixins.user_permissions import AdminOrSuperAdminRequiredMixin
+from prepaid_meters_token_generator_system.auth.mixins import AdminOrSuperAdminRequiredMixin
 
 from meter_manufacturer.models import MeterManufacturer
 from meter_manufacturer.forms import AddMeterManufacturerForm, MeterManufacturerSearchForm

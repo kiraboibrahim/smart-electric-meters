@@ -1,6 +1,6 @@
-from django.urls import path, include, register_converter
+from django.urls import path, register_converter
 
-from prepaid_meters_token_generator_system.utils.converters import HashIdConverter
+from prepaid_meters_token_generator_system.converters import HashIdConverter
 from meter import views as meter_views
 
 register_converter(HashIdConverter, "hashid")

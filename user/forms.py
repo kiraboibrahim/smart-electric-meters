@@ -2,23 +2,17 @@ from django.forms import ModelForm
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import PasswordResetForm  
 from django import forms
-from django.db.models import Q
 
-from prepaid_meters_token_generator_system.utils.forms import BaseSearchForm
-
-from user import account_types as user_account_types
-
-
-ADMIN_ACCOUNT_CHOICES = (
-    (user_account_types.MANAGER, "Manager"),
-)
-SUPER_ADMIN_ACCOUNT_CHOICES = (
-    (user_account_types.ADMIN, "Admin"),
-    (user_account_types.MANAGER, "Manager"),
-)
-
+from user.account_types import ADMIN, MANAGER
 
 User = get_user_model()
+ADMIN_ACCOUNT_CHOICES = (
+    (MANAGER, "Manager"),
+)
+SUPER_ADMIN_ACCOUNT_CHOICES = (
+    (ADMIN, "Admin"),
+    (MANAGER, "Manager"),
+)
 
 
 class CreateUserBaseForm(ModelForm):
@@ -37,13 +31,17 @@ class CreateUserBaseForm(ModelForm):
     def save(self):
         user_account_type = self.cleaned_data["account_type"]
         self.cleaned_data.pop("password_confirm", None)
-        if user_account_type == user_account_types.ADMIN:
+        if user_account_type == ADMIN:
             return User.objects.create_admin(**self.cleaned_data)
         else:
             return User.objects.create_manager(**self.cleaned_data)
 
-# A form used by admins to register users, their account choices are limited as compared to superadmins
+
 class AdminCreateUserForm(CreateUserBaseForm):
+    """
+    A form used by admins to register users, their account choices ie (Only managers) are limited as compared to super
+    admins
+    """
     account_type = forms.ChoiceField(label="Account type", choices=ADMIN_ACCOUNT_CHOICES)
     
     class Meta:
@@ -53,13 +51,16 @@ class AdminCreateUserForm(CreateUserBaseForm):
              "phone_no": "Phone number"
          }
 
-# The super admin can create admins and managers, Use super admin account choices
+
 class SuperAdminCreateUserForm(CreateUserBaseForm):
+    """
+    A form used by super admin to create admins and managers, It uses super admin account choices
+    """
     account_type = forms.ChoiceField(label="Account type", choices=SUPER_ADMIN_ACCOUNT_CHOICES)
+
     class Meta:
         model = User
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
-
 
 
 class EditUserForm(ModelForm):
@@ -73,7 +74,6 @@ class EditUserForm(ModelForm):
 
 
 class EditUserProfileForm(EditUserForm):
-
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user", None)
         if self.user:
@@ -96,7 +96,6 @@ class ResetPasswordForm(PasswordResetForm):
     phone_no = forms.CharField(label="Phone Number", max_length=10)
 
 
-
 class ChangePasswordForm(forms.Form):
     current_password = forms.CharField(label="Current password", widget=forms.PasswordInput)
     new_password = forms.CharField(label="New password", widget=forms.PasswordInput)
@@ -105,7 +104,6 @@ class ChangePasswordForm(forms.Form):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop("user")
         super().__init__(*args, **kwargs)
-
 
     def clean_current_password(self):
         current_password = self.cleaned_data["current_password"]
@@ -122,11 +120,7 @@ class ChangePasswordForm(forms.Form):
         if password_validation.validate_password(new_password, self.user) is None:
             return new_password
 
-    def update_password(self):
+    def change_password(self):
         self.user.set_password(self.cleaned_data["new_password"])
         self.user.save(update_fields=["password"])
         return self.user
-
-
-class SearchUserForm(forms.Form):
-    query = forms.CharField(required=False)

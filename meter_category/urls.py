@@ -1,6 +1,6 @@
 from django.urls import path, register_converter
 
-from prepaid_meters_token_generator_system.utils.converters import HashIdConverter
+from prepaid_meters_token_generator_system.converters import HashIdConverter
 from meter_category.views import MeterCategoryCreateView
 
 

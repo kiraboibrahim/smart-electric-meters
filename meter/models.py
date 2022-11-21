@@ -1,3 +1,5 @@
+import math
+
 from django.db import models
 from django.contrib.auth import get_user_model
  
@@ -5,6 +7,9 @@ import user.account_types as user_account_types
 
 from meter_manufacturer.models import MeterManufacturer
 from meter_category.models import MeterCategory
+
+import external_api.models
+
 
 User = get_user_model()
 
@@ -23,7 +28,19 @@ class Meter(models.Model):
             return fixed_charge + percentage_charge*amount_paid
 
         return calculate_charges
-        
+
+    def register(self):
+        return external_api.models.Meter(self).register()
+
+    def get_token(self, amount):
+        unit_rate = self.manager.unit_price.price
+        num_of_units = math.ceil(amount/unit_rate)
+        return external_api.models.Meter(self).get_token(num_of_units)
+
+    @property
+    def manufacturer_name(self):
+        return self.manufacturer.name
+
     def __str__(self):
         return "%s %s" %(self.meter_no, self.manager.get_fullname())
 
