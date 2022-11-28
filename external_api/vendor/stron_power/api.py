@@ -33,9 +33,9 @@ class Vendor(MeterVendorAPI):
         payload = RegisterMeterPayload.get()
 
         response = self.request("NewCustomer", payload)
-        is_meter_registered = response.text.strip('"')
-        if is_meter_registered != "true":
-            raise MeterRegistrationException()
+        txt_response = response.text.strip('"')
+        if txt_response != "true":
+            raise MeterRegistrationException(response.status_code, txt_response)
         return True
 
     def recharge_meter(self, meter, num_of_units):
@@ -47,7 +47,7 @@ class Vendor(MeterVendorAPI):
         try:
             response = response.json()[0]
         except IndexError as error:
-            raise EmptyTokenResponseException()
+            raise EmptyTokenResponseException(response.status_code)
         recharge_token = RechargeToken()
         recharge_token.token_no = response["Token"]
         recharge_token.num_of_units = response["Total_unit"]

@@ -21,38 +21,18 @@ from django.core.mail import send_mail
 from django.contrib.sites.shortcuts import get_current_site
 
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin, ManagerRequiredMixin
-from shared.mixins import SearchMixin
+from shared.views import SearchListView
 from shared.forms import SearchForm as UserSearchForm
 
-from users.forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, \
+from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, \
     ManagerUnitPriceEditForm
-from users.account_types import ADMIN
-from users.utils import get_add_user_form_class, get_users
-from users.models import UnitPrice
-from users.filters import UserSearchFieldMapping
-from users.mixins import UsersContextMixin
+from .account_types import ADMIN
+from .utils import get_add_user_form_class, get_users
+from .models import UnitPrice
+from .filters import UserSearchQueryParameterMapping
+from .mixins import UsersContextMixin
 
 User = get_user_model()
-
-
-class BaseUserListView(ListView):
-    template_name = "users/list_users.html.development"
-    context_object_name = "users"
-    model = User
-    extra_context = {
-        "user_search_form": UserSearchForm()
-    }
-    paginate_by = settings.MAX_ITEMS_PER_PAGE
-
-    def get_queryset(self):
-        users = get_users(self.request.user)
-        return users
-
-    def get_context_data(self, **kwargs):
-        add_user_form = get_add_user_form_class(self.request.user)()
-        context = super(BaseUserListView, self).get_context_data(**kwargs)
-        context["add_user_form"] = add_user_form
-        return context
 
 
 @login_required
@@ -74,19 +54,42 @@ def profile(request):
     return render(request, "users/profile.html.development", context)
 
 
-class UserListView(AdminOrSuperAdminRequiredMixin, BaseUserListView):
-    pass
-
-
-class UserSearchView(BaseUserListView, SearchMixin):
-    template_name = "users/search_users.html.development"
-    http_method_names = ["get"]
-    search_field_mapping = UserSearchFieldMapping
+class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
+    template_name = "users/list_users.html.development"
+    context_object_name = "users"
+    model = User
+    extra_context = {
+        "user_search_form": UserSearchForm()
+    }
+    paginate_by = settings.MAX_ITEMS_PER_PAGE
 
     def get_queryset(self):
-        users = super(UserSearchView, self).get_queryset()
-        search_filters = self.get_search_filters()
-        return users.filter(search_filters)
+        users = super().get_queryset()
+        users = get_users(self.request.user, initial_users=users)
+        return users
+
+    def get_context_data(self, **kwargs):
+        add_user_form = get_add_user_form_class(self.request.user)()
+        context = super().get_context_data(**kwargs)
+        context["add_user_form"] = add_user_form
+        return context
+
+
+class UserSearchView(SearchListView):
+    model = User
+    template_name = "users/search_users.html.development"
+    http_method_names = ["get"]
+    context_object_name = "users"
+    extra_context = {
+        "user_search_form": UserSearchForm()
+    }
+    paginate_by = settings.MAX_ITEMS_PER_PAGE
+    search_query_parameter_mapping_class = UserSearchQueryParameterMapping
+
+    def get_queryset(self):
+        users = super().get_queryset()
+        users = get_users(self.request.user, initial_users=users)
+        return users
 
     def get_context_data(self, **kwargs):
         context = super(UserSearchView, self).get_context_data(**kwargs)
@@ -140,13 +143,14 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UsersC
 class UserEditView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, UpdateView):
     """
     This view manipulates both user personal information and password, The normal view flow works on personal
-    information. The information to edit depends on the scope GET parameter
+    information and the set_new_password() function updates the password.
+    The information to edit depends on the scope GET parameter
     """
 
     model = User
     template_name = "users/edit_user.html.development"
     form_class = EditUserForm
-    success_message = "Changes saved successfully"
+    success_message = "Changes saved"
 
     def post(self, request, *args, **kwargs):
         scope = request.GET.get("scope", "personal-info")
@@ -156,14 +160,14 @@ class UserEditView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, SuccessM
             return self.set_new_password()
 
     def test_func(self):
-        to_be_edited_user = self.get_object()
+        self.object = to_be_edited_user = self.get_object()
         editor = self.request.user
-        if to_be_edited_user.assert_same_account_type(editor) or to_be_edited_user.is_super_admin():
+        if to_be_edited_user.assert_same_account_type(editor) or to_be_edited_user.is_super_admin() or \
+                to_be_edited_user.is_default_manager():
             return False
         return True
 
     def set_new_password(self):
-        self.object = self.get_object()
         set_password_form = SetPasswordForm(self.object, self.request.POST)
         if set_password_form.is_valid():
             set_password_form.save()
@@ -244,7 +248,8 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, Succes
         user_id = self.kwargs.get("pk")
         self.to_be_deleted_user = get_object_or_404(User, pk=user_id)
         deleter = self.request.user
-        if self.to_be_deleted_user.assert_same_account_type(deleter) or self.to_be_deleted_user.is_super_admin():
+        if self.to_be_deleted_user.assert_same_account_type(deleter) or self.to_be_deleted_user.is_super_admin() or \
+                self.to_be_deleted_user.is_default_manager():
             return False
         return True
 

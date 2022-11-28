@@ -10,6 +10,7 @@ from meter_categories.models import MeterCategory
 
 from manufacturers.models import MeterManufacturer
 
+from .utils import get_default_meter_manager
 from .models import Meter
 
 
@@ -18,6 +19,11 @@ User = get_user_model()
 
 class AddMeterForm(forms.ModelForm):
     is_registered = forms.BooleanField(label="Already registered with manufacturer", required=False)
+
+    def clean(self):
+        if self.cleaned_data.get("manager") is None:
+            self.cleaned_data["manager"] = get_default_meter_manager()
+        return super().clean()
 
     class Meta:
         model = Meter

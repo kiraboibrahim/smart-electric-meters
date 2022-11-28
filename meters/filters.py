@@ -4,14 +4,14 @@ from search_views.filters import BaseFilter
 from .models import Meter
 
 
-class MeterListFilter(django_filters.FilterSet):
+class MeterFieldsFilter(django_filters.FilterSet):
 
     class Meta:
         model = Meter
         fields = ['manufacturer', 'category', 'manager', 'is_active']
 
 
-class MeterSearchFieldMapping(BaseFilter):
+class MeterSearchQueryParameterMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

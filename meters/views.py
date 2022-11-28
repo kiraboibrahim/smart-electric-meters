@@ -14,7 +14,7 @@ from django.conf import settings
 from django.views import View
 
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
-from shared.mixins import SearchMixin
+from shared.views import SearchListView, FilterListView
 from shared.forms import SearchForm as MeterSearchForm
 
 from meter_categories.forms import AddMeterCategoryForm
@@ -24,67 +24,57 @@ from recharge_tokens.models import RechargeToken
 from external_api.vendor.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
     MeterVendorAPINotFoundException
 
-from .forms import RechargeMeterForm
 from .models import Meter
-from .filters import MeterSearchFieldMapping
-from .forms import AddMeterForm, MeterFiltersForm
-from .filters import MeterListFilter
+from .filters import MeterSearchQueryParameterMapping, MeterFieldsFilter
+from .forms import AddMeterForm, MeterFiltersForm, RechargeMeterForm
 from .mixins import MetersContextMixin
-from .utils import get_user_meters
+from .utils import get_user_meters, get_default_meter_manager
 
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class BaseMeterListView(ListView):
+class MeterListView(LoginRequiredMixin, FilterListView):
+    model = Meter
     template_name = "meters/list_meters.html.development"
     context_object_name = "meters"
-    extra_context = {
-        "add_meter_form": AddMeterForm(),
-        "add_meter_category_form": AddMeterCategoryForm()
-    }
-    model = Meter
     paginate_by = settings.MAX_ITEMS_PER_PAGE
+    model_fields_filter_class = MeterFieldsFilter
 
     def get_queryset(self):
-        meters = get_user_meters(self.request.user)
-        if not self.is_active_filter_on():
-            # Always return only active meters if is_active filter has not been specified
-            meters = meters.filter(is_active=True)
-        # Or else return meters based on the request GET parameters (filters)
-        meters = MeterListFilter(self.request.GET, queryset=meters).qs
+        meters = super().get_queryset()
+        meters = get_user_meters(self.request.user, initial_meters=meters)
         return meters
 
-    def is_active_filter_on(self):
-        """
-        Does the request have is_active parameter
-        """
-        return "is_active" in self.request.GET
-
     def get_context_data(self, **kwargs):
-        context = super(BaseMeterListView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context["filters_form"] = MeterFiltersForm(self.request.GET)
         context["meter_search_form"] = MeterSearchForm(self.request.GET)
         return context
 
 
-class MeterListView(LoginRequiredMixin, BaseMeterListView):
-    pass
-
-
-class MeterSearchView(LoginRequiredMixin, SearchMixin, BaseMeterListView):
+class MeterSearchView(LoginRequiredMixin, SearchListView):
+    model = Meter
     template_name = "meters/search_meters.html.development"
-    http_method_names = ["get"]
-    search_field_mapping = MeterSearchFieldMapping
+    context_object_name = "meters"
+    extra_context = {
+        "add_meter_form": AddMeterForm(),
+        "add_meter_category_form": AddMeterCategoryForm()
+    }
+    paginate_by = settings.MAX_ITEMS_PER_PAGE
+    search_query_parameter_mapping_class = MeterSearchQueryParameterMapping
+    model_fields_filter_class = MeterFieldsFilter
 
     def get_queryset(self):
-        meters = super(MeterSearchView, self).get_queryset()
-        search_filters = self.get_search_filters()
-        return meters.filter(search_filters)
+        meters = super().get_queryset()
+        meters = get_user_meters(self.request.user, initial_meters=meters)
+        return meters
 
     def get_context_data(self, **kwargs):
-        context = super(MeterSearchView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
+        context["filters_form"] = MeterFiltersForm(self.request.GET)
+        context["meter_search_form"] = MeterSearchForm(self.request.GET)
         return context
 
 
@@ -120,15 +110,15 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Meter
         return super(MeterCreateView, self).form_valid(form)
 
     def get_context_data(self, **kwargs):
-        context = super(MeterCreateView, self).get_context_data(**kwargs)
-        context.update(self.get_meters_context(self.request.user))
+        context = super().get_context_data(**kwargs)
         context["add_meter_form"] = context["form"]
+        context.update(self.get_meters_context(self.request.user))
         return context
 
 
 class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateView):
     model = Meter
-    fields = "__all__"
+    fields = ("meter_no", "manufacturer", "manager", "category")
     template_name = "meters/edit_meter.html.development"
     success_message = "Changes saved"
 
@@ -137,7 +127,7 @@ class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateV
 
     def get_context_data(self, **kwargs):
         context = super(MeterEditView, self).get_context_data(**kwargs)
-        context["recent_recharge_tokens"] = RechargeToken.objects.filter(meter=self.object)[0:20]
+        context["recent_recharge_tokens"] = RechargeToken.get_recent_recharge_tokens_for_meter(self.object)
         return context
 
 

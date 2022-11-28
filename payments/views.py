@@ -1,47 +1,48 @@
-from django.views.generic.list import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
 
-from shared.mixins import SearchMixin
+from shared.views import SearchListView, FilterListView
 from shared.forms import SearchForm as PaymentSearchForm
 
-from payments.models import Payment
-from payments.filters import PaymentSearchFieldMapping, PaymentListFilter
-from payments.forms import PaymentFiltersForm
+from .models import Payment
+from .filters import PaymentSearchQueryParameterMapping, PaymentTimeRangeFilter
+from .forms import PaymentFiltersForm
+from .utils import get_user_payments
 
-from users.account_types import MANAGER
 
-
-class BasePaymentListView(ListView):
+class PaymentListView(LoginRequiredMixin, FilterListView):
     model = Payment
     template_name = "payments/list_payments.html.development"
     context_object_name = "payments"
     paginate_by = settings.MAX_ITEMS_PER_PAGE
+    model_fields_filter_class = PaymentTimeRangeFilter
 
     def get_queryset(self):
-        payments = super(BasePaymentListView, self).get_queryset()
-        payments = PaymentListFilter(self.request.GET, queryset=payments).qs
-        if self.request.user.account_type == MANAGER:
-            payments = payments.filter(user=self.request.user)
+        payments = super().get_queryset()
+        payments = get_user_payments(self.request.user, initial_payments=payments)
         return payments
 
     def get_context_data(self, **kwargs):
-        context = super(BasePaymentListView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
         context["payment_filters_form"] = PaymentFiltersForm(self.request.GET)
         context["payment_search_form"] = PaymentSearchForm(self.request.GET)
         return context
 
 
-class PaymentListView(LoginRequiredMixin, BasePaymentListView):
-    pass
-
-
-class PaymentSearchView(LoginRequiredMixin, SearchMixin, BasePaymentListView):
-    search_field_mapping = PaymentSearchFieldMapping
+class PaymentSearchView(LoginRequiredMixin, SearchListView):
+    model = Payment
+    template_name = "payments/list_payments.html.development"
+    context_object_name = "payments"
+    paginate_by = settings.MAX_ITEMS_PER_PAGE
+    search_query_parameter_mapping_class = PaymentSearchQueryParameterMapping
+    model_fields_filter_class = PaymentTimeRangeFilter
 
     def get_queryset(self):
         payments = super(PaymentSearchView, self).get_queryset()
-        search_filters = self.get_search_filters()
-        payments = payments.filter(search_filters)
-        return payments
+        return get_user_payments(self.request.user, initial_payments=payments)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["payment_filters_form"] = PaymentFiltersForm(self.request.GET)
+        context["payment_search_form"] = PaymentSearchForm(self.request.GET)
+        return context

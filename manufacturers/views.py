@@ -8,10 +8,11 @@ from django.http import HttpResponseRedirect
 from search_views.filters import build_q
 
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
+from shared.views import SearchListView
 
 from manufacturers.models import MeterManufacturer
 from manufacturers.forms import AddMeterManufacturerForm, MeterManufacturerSearchForm
-from manufacturers.filters import MeterManufacturerSearchFilter
+from manufacturers.filters import MeterManufacturerSearchQueryParameterMapping
 
 
 class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
@@ -22,7 +23,7 @@ class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessage
     success_message = "Meter manufacturer: %(meter_manufacturer_name)s added successfully ."
     
     def get_success_message(self, cleaned_data):
-        meter_manufacturer= self.object
+        meter_manufacturer = self.object
         return self.success_message % dict(
             cleaned_data,
             meter_manufacturer_name=meter_manufacturer.name,
@@ -59,23 +60,17 @@ class MeterManufacturerEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMi
         return context
 
 
-class MeterManufacturerSearchView(AdminOrSuperAdminRequiredMixin, ListView):
+class MeterManufacturerSearchView(AdminOrSuperAdminRequiredMixin, SearchListView):
     model = MeterManufacturer
     template_name = "manufacturers/list_manufacturers.html.development"
     context_object_name = "meter_manufacturers"
-    filters_class = MeterManufacturerSearchFilter
     extra_context = {
         "add_meter_manufacturer_form": AddMeterManufacturerForm()
     }
-
-    def get_queryset(self):
-        search_query = build_q(self.filters_class.get_search_fields(), self.request.GET)
-        qs = MeterManufacturer.objects.all().filter(search_query)
-        return qs
+    search_query_parameter_mapping_class = MeterManufacturerSearchQueryParameterMapping
 
     def get_context_data(self, **kwargs):
         meter_manufacturer_search_form = MeterManufacturerSearchForm(self.request.GET)
-
         context = super(MeterManufacturerSearchView, self).get_context_data(**kwargs)
         context["meter_manufacturer_search_form"] = meter_manufacturer_search_form
         return context

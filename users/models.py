@@ -1,8 +1,10 @@
 from django.db import models
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
 from .managers import UserManager
 from .account_types import DJANGO_SUPERUSER, SUPER_ADMIN, ADMIN, MANAGER
+from .validators import is_not_default_manager
 
 
 class User(AbstractUser):
@@ -18,7 +20,8 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True, null=True, blank=True,
                               help_text="Email will be used for resetting your password")
-    phone_no = models.CharField(verbose_name="Phone number", max_length=10, unique=True)
+    phone_no = models.CharField(verbose_name="Phone number", max_length=10, unique=True,
+                                validators=[is_not_default_manager])
     address = models.CharField(max_length=255)
     account_type = models.PositiveIntegerField(choices=account_choices)
 
@@ -35,6 +38,9 @@ class User(AbstractUser):
 
     def is_manager(self):
         return self.account_type == MANAGER
+
+    def is_default_manager(self):
+        return self.phone_no == settings.DEFAULT_MANAGER_PHONE_NO
 
     @property
     def price_per_unit(self):
@@ -63,6 +69,13 @@ class User(AbstractUser):
 
     class Meta:
         ordering = ['-date_joined']
+
+
+class DefaultMeterManager(models.Model):
+    manager = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={"account_type": MANAGER})
+
+    def __str__(self):
+        return self.manager.full_name
 
 
 class UnitPrice(models.Model):

@@ -1,7 +1,7 @@
 from search_views.filters import BaseFilter
 
 
-class UserSearchFieldMapping(BaseFilter):
+class UserSearchQueryParameterMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

@@ -1,11 +1,10 @@
 from search_views.filters import BaseFilter
 import django_filters
 
+from .models import Payment
 
-from payments.models import Payment
 
-
-class PaymentListFilter(django_filters.FilterSet):
+class PaymentTimeRangeFilter(django_filters.FilterSet):
     from_ = django_filters.DateFilter(field_name="paid_at", lookup_expr="gt")
     to = django_filters.DateFilter(field_name="paid_at", lookup_expr="lt")
 
@@ -14,7 +13,7 @@ class PaymentListFilter(django_filters.FilterSet):
         fields = ['paid_at']
 
 
-class PaymentSearchFieldMapping(BaseFilter):
+class PaymentSearchQueryParameterMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

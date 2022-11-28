@@ -17,13 +17,13 @@ class MeterVendorAPIException(Exception):
 
 
 class MeterRegistrationException(MeterVendorAPIException):
-    def __init__(self):
-        self.status_code = 500
-        self.message = "Meter registration failure. Contact the meters vendor support"
+    def __init__(self, status_code, message):
+        message = message if message else "Meter registration failure. Contact the meters vendor support"
+        super().__init__(status_code, message)
 
 
 class EmptyTokenResponseException(MeterVendorAPIException):
 
-    def __init__(self):
-        self.status_code = 500
-        self.message = "No token received. Contact the meters vendor support"
+    def __init__(self, status_code, message=""):
+        message = message if message else "No token received. Contact the meters vendor support"
+        super().__init__(status_code, message)

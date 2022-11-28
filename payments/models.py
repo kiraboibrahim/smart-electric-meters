@@ -13,13 +13,13 @@ class Payment(models.Model):
 
     @property
     def payer_phone_no(self):
-        return self.user.phone_no
+        return self.user.phone_no if self.user else None
 
     def payer_full_name(self):
-        return self.user.full_name
+        return self.user.full_name if self.user else None
 
     def __str__(self):
-        return "%s paid %s" % (self.user.full_name, self.amount_paid)
+        return "%s paid %s" % self.id
 
     class Meta:
         ordering = ["-paid_at"]

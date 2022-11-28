@@ -2,14 +2,15 @@ import math
 
 from django.db import models
 from django.contrib.auth import get_user_model
- 
+from django.conf import settings
+
+import external_api.models
+
 import users.account_types as user_account_types
 
 from manufacturers.models import MeterManufacturer
 
 from meter_categories.models import MeterCategory
-
-import external_api.models
 
 
 User = get_user_model()
