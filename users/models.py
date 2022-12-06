@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
 from .managers import UserManager
-from .account_types import DJANGO_SUPERUSER, SUPER_ADMIN, ADMIN, MANAGER
+from .account_types import DJANGO_SUPERUSER, SUPER_ADMIN, ADMIN, MANAGER, DEFAULT_MANAGER
 from .validators import is_not_default_manager
 
 
@@ -13,6 +13,7 @@ class User(AbstractUser):
         (SUPER_ADMIN, "Super Admin"),
         (ADMIN, "Admin"),
         (MANAGER, "Manager"),
+        (DEFAULT_MANAGER, "Default Manager")
     ]
 
     username = None

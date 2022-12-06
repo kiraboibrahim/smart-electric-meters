@@ -29,8 +29,7 @@ class FilterListView(ListView):
     http_method_names = ["get"]
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        queryset = self.get_model_fields_filter_class()(self.request.GET, queryset=queryset).qs
+        queryset = self.get_model_fields_filter_class()(self.request.GET, queryset=super().get_queryset()).qs
         return queryset
 
     def get_model_fields_filter_class(self):

@@ -4,7 +4,6 @@ from django.shortcuts import redirect
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.views.generic.list import ListView
 from django.views.generic.edit import UpdateView, CreateView
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from django.views.generic.detail import SingleObjectMixin
@@ -28,8 +27,7 @@ from .models import Meter
 from .filters import MeterSearchQueryParameterMapping, MeterFieldsFilter
 from .forms import AddMeterForm, MeterFiltersForm, RechargeMeterForm
 from .mixins import MetersContextMixin
-from .utils import get_user_meters, get_default_meter_manager
-
+from .utils import get_user_meters
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -40,6 +38,10 @@ class MeterListView(LoginRequiredMixin, FilterListView):
     template_name = "meters/list_meters.html.development"
     context_object_name = "meters"
     paginate_by = settings.MAX_ITEMS_PER_PAGE
+    extra_context = {
+        "add_meter_form": AddMeterForm(),
+        "add_meter_category_form": AddMeterCategoryForm()
+    }
     model_fields_filter_class = MeterFieldsFilter
 
     def get_queryset(self):
@@ -106,7 +108,7 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Meter
             logger.exception("Meter registration failed")
             messages.error(self.request, "Registration with the meter manufacturer has failed")
             return super(MeterCreateView, self).form_invalid(form)
-        
+
         return super(MeterCreateView, self).form_valid(form)
 
     def get_context_data(self, **kwargs):
@@ -131,7 +133,8 @@ class MeterEditView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UpdateV
         return context
 
 
-class RechargeMeterView(SingleObjectMixin, SuccessMessageMixin, ContextMixin, TemplateResponseMixin, View):
+class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMixin, ContextMixin, TemplateResponseMixin,
+                        View):
     model = Meter
     template_name = "meters/recharge_meter.html.development"
     extra_context = {
@@ -143,13 +146,15 @@ class RechargeMeterView(SingleObjectMixin, SuccessMessageMixin, ContextMixin, Te
 
     def get(self, request, *args, **kwargs):
         self.object = meter = self.get_object()
-        recharge_meter_form = RechargeMeterForm(initial={"meter_no": meter.meter_no,
-                                                         "price_per_unit": meter.unit_price})
+        recharge_meter_form = RechargeMeterForm(request.user, initial={"meter_no": meter.meter_no,
+                                                                       "price_per_unit": meter.unit_price
+                                                                       }
+                                                )
         context = self.get_context_data(recharge_meter_form=recharge_meter_form)
         return self.render_to_response(context)
-    
+
     def post(self, request, *args, **kwargs):
-        recharge_meter_form = RechargeMeterForm(request.POST)
+        recharge_meter_form = RechargeMeterForm(request.user, request.POST)
         if recharge_meter_form.is_valid():
             meter_manufacturer_name = recharge_meter_form.meter.manufacturer_name
             try:

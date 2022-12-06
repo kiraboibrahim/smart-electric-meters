@@ -10,7 +10,6 @@ from meter_categories.models import MeterCategory
 
 from manufacturers.models import MeterManufacturer
 
-from .utils import get_default_meter_manager
 from .models import Meter
 
 
@@ -19,11 +18,6 @@ User = get_user_model()
 
 class AddMeterForm(forms.ModelForm):
     is_registered = forms.BooleanField(label="Already registered with manufacturer", required=False)
-
-    def clean(self):
-        if self.cleaned_data.get("manager") is None:
-            self.cleaned_data["manager"] = get_default_meter_manager()
-        return super().clean()
 
     class Meta:
         model = Meter
@@ -39,8 +33,8 @@ class EditMeterForm(AddMeterForm):
 
 class MeterFiltersForm(forms.Form):
     is_active_field_choices = [
-        (1, "Active"),
-        (0, "Inactive"),
+        (True, "Active"),
+        (False, "Inactive"),
     ]
     manufacturer = forms.ModelChoiceField(queryset=MeterManufacturer.objects.all(), empty_label="All", required=False)
     category = forms.ModelChoiceField(queryset=MeterCategory.objects.all(), empty_label="All", required=False)
@@ -50,6 +44,12 @@ class MeterFiltersForm(forms.Form):
 
 
 class RechargeMeterForm(forms.Form):
+
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user.is_manager():
+            self.fields["price_per_unit"].disabled = True
+
     meter_no = forms.CharField(max_length=11, label="Meter number")
     gross_recharge_amount = forms.IntegerField(label="Recharge amount",
                                                widget=forms.TextInput(attrs={"type": "number"}))
