@@ -38,6 +38,8 @@ class Meter(models.Model):
         num_of_units = net_recharge_amount / price_per_unit
         recharge_token = external_api.models.Meter(self).recharge(num_of_units)
         recharge_token.meter = self
+        recharge_token.amount_paid = gross_recharge_amount
+        recharge_token.charges = self.get_charges()(gross_recharge_amount)
         return recharge_token
 
     def _get_net_recharge_amount(self, gross_recharge_amount):

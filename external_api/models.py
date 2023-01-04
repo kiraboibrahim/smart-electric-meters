@@ -66,3 +66,5 @@ class RechargeToken:
     num_of_units = None
     unit = None
     meter = None
+    charges = None
+    amount_paid = None

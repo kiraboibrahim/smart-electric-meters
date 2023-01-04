@@ -20,6 +20,8 @@ from meter_categories.forms import AddMeterCategoryForm
 
 from recharge_tokens.models import RechargeToken
 
+from payments.models import Payment
+
 from external_api.vendor.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
     MeterVendorAPINotFoundException
 
@@ -188,8 +190,8 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
             except EmptyTokenResponseException:
                 self.error_message = "No token received. Contact %s's customer helpline or support" % \
                                      meter_manufacturer_name
-            except Exception:
-                logger.exception("Recharge token generation failed")
+            except Exception as err:
+                logger.exception(str(err))
                 self.error_message = "Unknown error"
             if self.error_message:
                 messages.error(request, self.error_message)
@@ -197,8 +199,10 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
         context = self.get_context_data(recharge_meter_form=recharge_meter_form)
         return self.render_to_response(context=context)
 
-    @staticmethod
-    def save_recharge_token(recharge_token, payment=None):
+    def save_recharge_token(self, recharge_token):
+        payment = Payment(user=self.request.user, amount_paid=recharge_token.amount_paid, charges=recharge_token.charges)
+        payment.is_virtual = True
+        payment.save()
         RechargeToken.objects.create(token_no=recharge_token.token_no, num_of_units=recharge_token.num_of_units,
                                      meter=recharge_token.meter, payment=payment)
 

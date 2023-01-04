@@ -10,6 +10,7 @@ class Payment(models.Model):
     amount_paid = models.PositiveIntegerField()
     charges = models.PositiveIntegerField()
     paid_at = models.DateTimeField(auto_now_add=True)
+    is_virtual = models.BooleanField(default=True)
 
     @property
     def payer_phone_no(self):
