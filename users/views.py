@@ -37,11 +37,15 @@ User = get_user_model()
 
 @login_required
 def dashboard(request):
-    return render(request, "users/dashboard.html.development")
+    template_name = "users/dashboard.html.development"
+    if request.user.is_manager():
+        template_name = "managers/users/dashboard.html.development"
+    return render(request, template_name)
 
 
 @login_required
 def profile(request):
+    template_name = "users/profile.html.development"
     edit_user_profile_form = EditUserProfileForm(user=request.user)
     change_password_form = ChangePasswordForm(user=request.user)
 
@@ -50,8 +54,10 @@ def profile(request):
         "change_password_form": change_password_form,
     }
     if request.user.is_manager():
+        template_name = "managers/users/profile.html.development"
         context["unit_price_edit_form"] = ManagerUnitPriceEditForm(initial={'price': request.user.price_per_unit})
-    return render(request, "users/profile.html.development", context)
+
+    return render(request, template_name, context)
 
 
 class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
@@ -77,7 +83,7 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
 
 class UserSearchView(SearchListView):
     model = User
-    template_name = "users/search_users.html.development"
+    template_name = "users/list_users.html.development"
     http_method_names = ["get"]
     context_object_name = "users"
     extra_context = {

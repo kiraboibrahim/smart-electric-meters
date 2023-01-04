@@ -24,8 +24,8 @@ from external_api.vendor.exceptions import MeterRegistrationException, EmptyToke
     MeterVendorAPINotFoundException
 
 from .models import Meter
-from .filters import MeterSearchQueryParameterMapping, MeterFieldsFilter
-from .forms import AddMeterForm, MeterFiltersForm, RechargeMeterForm
+from .filters import MeterSearchQueryParameterMapping, AdminMeterListFilter, ManagerMeterListFilter
+from .forms import AddMeterForm, ManagerMeterFiltersForm, AdminMeterFiltersForm, RechargeMeterForm
 from .mixins import MetersContextMixin
 from .utils import get_user_meters
 
@@ -42,7 +42,12 @@ class MeterListView(LoginRequiredMixin, FilterListView):
         "add_meter_form": AddMeterForm(),
         "add_meter_category_form": AddMeterCategoryForm()
     }
-    model_fields_filter_class = MeterFieldsFilter
+    model_list_filter_class = AdminMeterListFilter
+
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            return "managers/meters/list_meters.html.development"
+        return self.template_name
 
     def get_queryset(self):
         meters = super().get_queryset()
@@ -51,22 +56,33 @@ class MeterListView(LoginRequiredMixin, FilterListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["filters_form"] = MeterFiltersForm(self.request.GET)
+        meter_filters_form_class = ManagerMeterFiltersForm if self.request.user.is_manager() else AdminMeterFiltersForm
+        context["filters_form"] = meter_filters_form_class(self.request.GET)
         context["meter_search_form"] = MeterSearchForm(self.request.GET)
         return context
 
 
 class MeterSearchView(LoginRequiredMixin, SearchListView):
     model = Meter
-    template_name = "meters/search_meters.html.development"
+    template_name = "meters/list_meters.html.development"
     context_object_name = "meters"
     extra_context = {
         "add_meter_form": AddMeterForm(),
         "add_meter_category_form": AddMeterCategoryForm()
     }
+
     paginate_by = settings.MAX_ITEMS_PER_PAGE
     search_query_parameter_mapping_class = MeterSearchQueryParameterMapping
-    model_fields_filter_class = MeterFieldsFilter
+
+    def get_model_list_filter_class(self):
+        if self.request.user.is_manager():
+            return ManagerMeterListFilter
+        return self.model_list_filter_class
+
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            return "managers/meters/list_meters.html.development"
+        return self.template_name
 
     def get_queryset(self):
         meters = super().get_queryset()
@@ -75,7 +91,8 @@ class MeterSearchView(LoginRequiredMixin, SearchListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["filters_form"] = MeterFiltersForm(self.request.GET)
+        meter_filter_form_class = ManagerMeterFiltersForm if self.request.user.is_manager() else AdminMeterFiltersForm
+        context["filters_form"] = meter_filter_form_class(self.request.GET)
         context["meter_search_form"] = MeterSearchForm(self.request.GET)
         return context
 
@@ -88,7 +105,7 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Meter
     http_method_names = ["post"]
     extra_context = {
         "meter_search_form": MeterSearchForm(),
-        "filters_form": MeterFiltersForm(),
+        "filters_form": AdminMeterFiltersForm(),
         "add_meter_category_form": AddMeterCategoryForm()
     }
 

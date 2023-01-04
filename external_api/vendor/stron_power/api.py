@@ -1,13 +1,13 @@
 import requests
 import logging
 
-from django.conf import settings
-
 from external_api.vendor.base import MeterVendorAPI
 from external_api.vendor.stron_power.payloads import RegisterMeterPayload, RechargeMeterPayload
 from external_api.vendor.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
     MeterVendorAPIException
 from external_api.models import RechargeToken
+
+from . import settings
 
 
 logger = logging.getLogger(__name__)
@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 class Vendor(MeterVendorAPI):
 
-    BASE_URL = "http://www.server-api.stronpower.com/api"
-    NAME = "LEGIT-SYSTEMS"
+    BASE_URL = settings.API_BASE_URL
+    NAME = settings.API_PROVIDER_NAME
 
     def __init__(self):
         self.username = settings.STRON_POWER_USERNAME
@@ -31,7 +31,6 @@ class Vendor(MeterVendorAPI):
     def register_meter(self, meter):
         RegisterMeterPayload.meter = meter
         payload = RegisterMeterPayload.get()
-
         response = self.request("NewCustomer", payload)
         txt_response = response.text.strip('"')
         if txt_response != "true":

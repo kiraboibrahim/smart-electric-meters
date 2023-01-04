@@ -15,7 +15,12 @@ class PaymentListView(LoginRequiredMixin, FilterListView):
     template_name = "payments/list_payments.html.development"
     context_object_name = "payments"
     paginate_by = settings.MAX_ITEMS_PER_PAGE
-    model_fields_filter_class = PaymentTimeRangeFilter
+    model_list_filter_class = PaymentTimeRangeFilter
+
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            return "managers/payments/list_payments.html.development"
+        return self.template_name
 
     def get_queryset(self):
         payments = super().get_queryset()

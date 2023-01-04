@@ -9,7 +9,11 @@ env = environ.Env(DEBUG=(bool, False))
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Read django project settings
 environ.Env.read_env(os.path.join(PROJECT_DIR, ".env"))
+
+# Read Stron Power settings
+environ.Env.read_env(os.path.join(BASE_DIR, "external_api", "vendor", "stron_power", ".env"))
 
 DEBUG = env("DEBUG")
 
@@ -47,7 +51,8 @@ LOCAL_APPS = [
     'manufacturers.apps.MeterManufacturerConfig',
     'meter_categories.apps.MeterCategoryConfig',
     'payments.apps.PaymentConfig',
-    'recharge_tokens.apps.RechargeTokensConfig'
+    'recharge_tokens.apps.RechargeTokensConfig',
+    'external_api.apps.ExternalApiConfig',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -63,7 +68,7 @@ MIDDLEWARE = [
     'django_user_agents.middleware.UserAgentMiddleware',
 ]
 
-ROOT_URLCONF = 'smart_meters.urls'
+ROOT_URLCONF = 'config.urls'
 
 
 TEMPLATES = [
@@ -83,7 +88,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'smart_meters.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': env.db()
@@ -120,9 +125,6 @@ AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/users/login"
 LOGIN_REDIRECT_URL = "/users/profile"
 LOGOUT_REDIRECT_URL = LOGIN_URL
-
-STRON_POWER_USERNAME = env("STRON_POWER_USERNAME")
-STRON_POWER_PASSWORD = env("STRON_POWER_PASSWORD")
 
 TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
@@ -169,23 +171,23 @@ LOGGING = {
     "handlers": {
         "general_file": {
             "class": "logging.FileHandler",
-            "level": "DEBUG",
+            "level": "ERROR",
             "filename": os.path.join(BASE_DIR, "errors.log"),
-            "filters": ["require_debug_true"],
+            "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
         "external_api_file": {
             "class": "logging.FileHandler",
-            "level": "DEBUG",
+            "level": "ERROR",
             "filename": os.path.join(BASE_DIR, "external_api", "errors.log"),
-            "filters": ["require_debug_true"],
+            "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
         "external_api_console": {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
             "formatter": "verbose",
-            "filters": ["require_debug_false"]
+            "filters": ["require_debug_true"]
         }
     },
     "loggers": {

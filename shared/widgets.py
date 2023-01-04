@@ -10,3 +10,12 @@ class PasswordInput(forms.PasswordInput):
         attrs = attrs or {}
         attrs["data-toggle"] = "password"
         super().__init__(*args, attrs=attrs, **kwargs)
+
+
+class DateInput(forms.TextInput):
+
+    def __init__(self, *args, attrs=None, **kwargs):
+        attrs = attrs or {}
+        attrs["type"] = "date"
+        super().__init__(*args, attrs=attrs, **kwargs)
+

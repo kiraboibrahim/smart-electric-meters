@@ -4,7 +4,7 @@ import django_filters
 from .models import RechargeToken
 
 
-class RechargeTokenFieldsFilter(django_filters.FilterSet):
+class RechargeTokenListFilter(django_filters.FilterSet):
     from_ = django_filters.DateFilter(field_name="generated_at", lookup_expr="gt")
     to = django_filters.DateFilter(field_name="generated_at", lookup_expr="lt")
     manufacturer = django_filters.NumberFilter(field_name="meter__manufacturer", lookup_expr="exact")

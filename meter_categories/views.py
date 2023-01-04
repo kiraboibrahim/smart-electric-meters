@@ -7,7 +7,7 @@ from shared.forms import SearchForm as MeterSearchForm
 
 from meter_categories.models import MeterCategory
 
-from meters.forms import AddMeterForm, MeterFiltersForm
+from meters.forms import AddMeterForm, AdminMeterFiltersForm
 from meters.mixins import MetersContextMixin
 
 
@@ -19,7 +19,7 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
     success_message = "Meter category: %(label)s added"
     extra_context = {
         "meter_search_form": MeterSearchForm(),
-        "filters_form": MeterFiltersForm(),
+        "filters_form": AdminMeterFiltersForm(),
         "add_meter_form": AddMeterForm(),
     }
     

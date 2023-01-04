@@ -31,7 +31,7 @@ class EditMeterForm(AddMeterForm):
     pass
                 
 
-class MeterFiltersForm(forms.Form):
+class AdminMeterFiltersForm(forms.Form):
     is_active_field_choices = [
         (True, "Active"),
         (False, "Inactive"),
@@ -40,6 +40,15 @@ class MeterFiltersForm(forms.Form):
     category = forms.ModelChoiceField(queryset=MeterCategory.objects.all(), empty_label="All", required=False)
     manager = forms.ModelChoiceField(queryset=User.objects.all().filter(account_type=MANAGER), empty_label="All",
                                      required=False)
+    is_active = forms.ChoiceField(label="Status", choices=is_active_field_choices, required=False)
+
+
+class ManagerMeterFiltersForm(forms.Form):
+    is_active_field_choices = [
+        (True, "Active"),
+        (False, "Inactive"),
+    ]
+    manufacturer = forms.ModelChoiceField(queryset=MeterManufacturer.objects.all(), empty_label="All", required=False)
     is_active = forms.ChoiceField(label="Status", choices=is_active_field_choices, required=False)
 
 
