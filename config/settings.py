@@ -13,7 +13,7 @@ PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 environ.Env.read_env(os.path.join(PROJECT_DIR, ".env"))
 
 # Read Stron Power settings
-environ.Env.read_env(os.path.join(BASE_DIR, "external_api", "vendor", "stron_power", ".env"))
+environ.Env.read_env(os.path.join(BASE_DIR, "vendor_api", "vendors", "stron_power", ".env"))
 
 DEBUG = env("DEBUG")
 
@@ -52,7 +52,7 @@ LOCAL_APPS = [
     'meter_categories.apps.MeterCategoryConfig',
     'payments.apps.PaymentConfig',
     'recharge_tokens.apps.RechargeTokensConfig',
-    'external_api.apps.ExternalApiConfig',
+    'vendor_api.apps.VendorApiConfig',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -176,14 +176,14 @@ LOGGING = {
             "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
-        "external_api_file": {
+        "vendor_api_file": {
             "class": "logging.FileHandler",
             "level": "ERROR",
-            "filename": os.path.join(BASE_DIR, "external_api", "errors.log"),
+            "filename": os.path.join(BASE_DIR, "vendor_api", "errors.log"),
             "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
-        "external_api_console": {
+        "vendor_api_console": {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
             "formatter": "verbose",
@@ -191,8 +191,8 @@ LOGGING = {
         }
     },
     "loggers": {
-        "external_api": {
-            "handlers": ["external_api_file", "external_api_console"]
+        "vendor_api": {
+            "handlers": ["vendor_api_file", "vendor_api_console"]
         },
         "": {
             "handlers": ["general_file"]

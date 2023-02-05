@@ -1,7 +1,7 @@
 import import_string
 
-from external_api.vendor.base import MeterVendorAPIFactory
-from external_api.vendor.exceptions import MeterVendorAPINotFoundException
+from vendor_api.vendors.base import MeterVendorAPIFactory
+from vendor_api.vendors.exceptions import MeterVendorAPINotFoundException
 
 
 class MeterVendorAPIFactoryImpl(MeterVendorAPIFactory):
@@ -15,7 +15,7 @@ class MeterVendorAPIFactoryImpl(MeterVendorAPIFactory):
         """
         vendor_name = vendor_name.lower().strip().replace(" ", "_")
         try:
-            vendor_class = import_string("external_api.vendor.%s.api:Vendor" % vendor_name)
+            vendor_api_class = import_string("vendor_api.vendors.%s.api:Vendor" % vendor_name)
         except ImportError:
             raise MeterVendorAPINotFoundException()
-        return vendor_class()
+        return vendor_api_class()

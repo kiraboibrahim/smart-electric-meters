@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.contrib.auth import get_user_model
 from django.conf import settings
 
-import external_api.models
+import vendor_api.models
 
 from users.account_types import MANAGER, DEFAULT_MANAGER
 
@@ -38,9 +38,6 @@ class Meter(models.Model):
                                  default=get_default_meter_category)
     is_active = models.BooleanField(default=True)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @functools.cached_property
     def default_manager(self):
         default_meter_manager = User.objects.get(phone_no=settings.DEFAULT_MANAGER_PHONE_NO)
@@ -50,15 +47,13 @@ class Meter(models.Model):
         service_charges = self.get_charges(gross_recharge_amount)
         net_recharge_amount = gross_recharge_amount - service_charges
         num_of_units = net_recharge_amount / price_per_unit
-        recharge_token = external_api.models.Meter(self).recharge(num_of_units)
+        recharge_token = vendor_api.models.Meter(self).recharge(num_of_units)
         recharge_token = RechargeToken(recharge_token.token_no, recharge_token.num_of_units, recharge_token.unit,
                                        self, gross_recharge_amount, service_charges)
         return recharge_token
 
     def register(self):
-        if self.manager is None:
-            self.manager = get_default_meter_manager()
-        return external_api.models.Meter(self).register()
+        return vendor_api.models.Meter(self).register()
 
     def get_charges(self, gross_amount):
         percentage_charge, fixed_charge = self.category.charges

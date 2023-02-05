@@ -260,9 +260,9 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, Succes
         return True
 
     def get(self, *args, **kwargs):
-        if self.to_be_deleted_user.num_of_associated_meters == 0:
+        if not self.to_be_deleted_user.has_associated_meters():
             self.to_be_deleted_user.delete()
-            success_message = self.success_message % ({"full_name": self.to_be_deleted_user.full_name})
+            success_message = self.get_success_message({"full_name": self.to_be_deleted_user.full_name})
             messages.success(self.request,  success_message)
         else:
             messages.error(

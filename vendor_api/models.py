@@ -1,6 +1,6 @@
 import uuid
 
-from external_api.vendor.api_factory import MeterVendorAPIFactoryImpl
+from vendor_api.vendors.api_factory import MeterVendorAPIFactoryImpl
 
 
 class MeterCustomer:

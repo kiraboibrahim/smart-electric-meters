@@ -22,7 +22,7 @@ from recharge_tokens.models import RechargeToken
 
 from payments.models import Payment
 
-from external_api.vendor.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
+from vendor_api.vendors.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
     MeterVendorAPINotFoundException
 
 from .models import Meter
@@ -177,7 +177,7 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
         if recharge_meter_form.is_valid():
             meter_manufacturer_name = recharge_meter_form.meter.manufacturer_name
             try:
-                recharge_token = recharge_meter_form.recharge(is_manager=request.user.is_manager())
+                recharge_token = recharge_meter_form.recharge()
                 self.save_recharge_token(recharge_token)
                 success_message = self.get_success_message({"token_no": recharge_token.token_no,
                                                             "num_of_units": recharge_token.num_of_units,
@@ -190,9 +190,9 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
             except EmptyTokenResponseException:
                 self.error_message = "No token received. Contact %s's customer helpline or support" % \
                                      meter_manufacturer_name
-            except Exception as err:
-                logger.exception(str(err))
-                self.error_message = "Unknown error"
+            except Exception as exc:
+                logger.exception(str(exc))
+                self.error_message = "Something went wrong"
             if self.error_message:
                 messages.error(request, self.error_message)
 
@@ -216,12 +216,8 @@ class DeactivateMeterView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, Suc
     def get(self, request, *args, **kwargs):
         meter = self.get_object()
         self.deactivate_meter(meter)
-        self.add_success_message(meter_no=meter.meter_no)
+        messages.success(request, self.get_success_message({"meter_no": meter.meter_no}))
         return redirect(self.success_url)
-
-    def add_success_message(self, **kwargs):
-        success_message = self.get_success_message(cleaned_data=kwargs)
-        messages.success(self.request, success_message)
 
     @staticmethod
     def deactivate_meter(meter):
@@ -237,12 +233,8 @@ class ActivateMeterView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, Succe
     def get(self, request, *args, **kwargs):
         meter = self.get_object()
         self.activate_meter(meter)
-        self.add_success_message(meter_no=meter.meter_no)
+        messages.success(request, self.get_success_message({"meter_no": meter.meter_no}))
         return redirect(self.success_url)
-
-    def add_success_message(self, **kwargs):
-        success_message = self.get_success_message(cleaned_data=kwargs)
-        messages.success(self.request, success_message)
 
     @staticmethod
     def activate_meter(meter):

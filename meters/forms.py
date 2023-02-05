@@ -55,8 +55,9 @@ class ManagerMeterFiltersForm(forms.Form):
 class RechargeMeterForm(forms.Form):
 
     def __init__(self, user, *args, **kwargs):
+        self.user = user
         super().__init__(*args, **kwargs)
-        if user.is_manager():
+        if self.user.is_manager():
             self.fields["price_per_unit"].disabled = True
 
     meter_no = forms.CharField(max_length=11, label="Meter number")
@@ -66,33 +67,29 @@ class RechargeMeterForm(forms.Form):
 
     def clean(self):
         gross_recharge_amount = self.cleaned_data.get("gross_recharge_amount")
-        meter = self.meter
-        if meter is None:
+        if self.meter is None:
             self.add_error("meter_no", "Meter not found")
         else:
-            self.cleaned_data["meter"] = meter
-            minimum_recharge_amount = self.get_meter_minimum_recharge_amount(meter)
-            if gross_recharge_amount <= minimum_recharge_amount:
-                self.add_error("gross_recharge_amount", "Amount should be greater than %d" % minimum_recharge_amount)
+            self.cleaned_data["meter"] = self.meter  # Add meter to cleaned data to be retrieved by view
+            if gross_recharge_amount <= self.minimum_recharge_amount:
+                self.add_error("gross_recharge_amount", "Amount should be greater than %d" %
+                               self.minimum_recharge_amount)
         return self.cleaned_data
 
     @cached_property
     def meter(self):
         meter_no = self.cleaned_data["meter_no"]
-        meter = Meter.objects.filter(meter_no=meter_no).select_related()
-        if len(meter) != 1:
-            return None
-        return meter[0]
+        return Meter.objects.filter(meter_no=meter_no).select_related().first()
 
-    @staticmethod
-    def get_meter_minimum_recharge_amount(meter):
-        percentage_charge, fixed_charge = meter.category.charges
-        minimum_recharge_amount = math.ceil(fixed_charge / (1 - percentage_charge))
-        return minimum_recharge_amount
+    @property
+    def minimum_recharge_amount(self):
+        percentage_charge, fixed_charge = self.meter.category.charges
+        return math.ceil(fixed_charge / (1 - percentage_charge))
 
-    def recharge(self, is_manager=True):
+    def recharge(self):
         gross_recharge_amount = self.cleaned_data["gross_recharge_amount"]
         price_per_unit = self.cleaned_data["price_per_unit"]
-        if is_manager:
+        if self.user.is_manager:
+            # Change the price unit to the one of the manager instead of the one given in the form
             price_per_unit = self.meter.unit_price
         return self.meter.recharge(gross_recharge_amount, price_per_unit)

@@ -52,6 +52,11 @@ class User(AbstractUser):
     def full_name(self):
         return "%s %s" % (self.first_name.title(), self.last_name.title())
 
+    def has_associated_meters(self):
+        if self.num_of_associated_meters == 0:
+            return False
+        return True
+
     @property
     def num_of_associated_meters(self):
         if self.is_manager():
