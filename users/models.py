@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
@@ -45,7 +46,10 @@ class User(AbstractUser):
 
     @property
     def price_per_unit(self):
-        if self.is_manager() and hasattr(self, "unit_price"):
+        """
+        The name is 'price_per_unit'(it could have been 'unit_price') because the related manager goes by the name 'unit_price'
+        """
+        if (self.is_manager() or self.is_default_manager()) and hasattr(self, "unit_price"):
             return self.unit_price.price
 
     @property
@@ -77,15 +81,8 @@ class User(AbstractUser):
         ordering = ['-date_joined']
 
 
-class DefaultMeterManager(models.Model):
-    manager = models.OneToOneField(User, on_delete=models.CASCADE, limit_choices_to={"account_type": MANAGER})
-
-    def __str__(self):
-        return self.manager.full_name
-
-
 class UnitPrice(models.Model):
     manager = models.OneToOneField(User, related_name="unit_price", unique=True, on_delete=models.CASCADE,
-                                   limit_choices_to={"account_type": MANAGER})
+                                   limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER))
     label = models.CharField(default="API-STANDARD", max_length=255)
     price = models.PositiveIntegerField(default=1000)
