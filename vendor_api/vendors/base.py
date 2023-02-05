@@ -8,16 +8,16 @@ class MeterVendorAPI(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_meter(self, meter):
+    def register_meter(self, meter) -> bool:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_price_category(self, price_category):
+    def register_price_category(self, price_category) -> bool:
         raise NotImplementedError
 
 
 class MeterVendorAPIFactory(abc.ABC):
 
     @abc.abstractmethod
-    def get(self, manufacturer_name):
+    def get(self, manufacturer_name: str):
         raise NotImplementedError
