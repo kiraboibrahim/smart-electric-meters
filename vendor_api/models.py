@@ -61,6 +61,13 @@ class Meter:
         return meter_vendor_api
 
 
+class PriceCategory:
+    """
+    Implement this model and the respective payload
+    """
+    pass
+
+
 class RechargeToken:
     token_no = None
     num_of_units = None
