@@ -5,14 +5,12 @@ from django.views.generic.list import ListView
 from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from django.http import HttpResponseRedirect
 
-from search_views.filters import build_q
-
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
 from shared.views import SearchListView
 
 from manufacturers.models import MeterManufacturer
 from manufacturers.forms import AddMeterManufacturerForm, MeterManufacturerSearchForm
-from manufacturers.filters import MeterManufacturerSearchQueryParameterMapping
+from manufacturers.filters import MeterManufacturerSearchUrlQueryKwargMapping
 
 
 class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):
@@ -67,7 +65,7 @@ class MeterManufacturerSearchView(AdminOrSuperAdminRequiredMixin, SearchListView
     extra_context = {
         "add_meter_manufacturer_form": AddMeterManufacturerForm()
     }
-    search_query_parameter_mapping_class = MeterManufacturerSearchQueryParameterMapping
+    search_url_query_kwarg_mapping_class = MeterManufacturerSearchUrlQueryKwargMapping
 
     def get_context_data(self, **kwargs):
         meter_manufacturer_search_form = MeterManufacturerSearchForm(self.request.GET)

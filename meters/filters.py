@@ -18,7 +18,7 @@ class ManagerMeterListFilter(django_filters.FilterSet):
         fields = ['manufacturer', 'is_active']
 
 
-class MeterSearchQueryParameterMapping(BaseFilter):
+class MeterSearchUrlQueryKwargMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

@@ -5,7 +5,7 @@ from shared.views import SearchListView, FilterListView
 from shared.forms import SearchForm as PaymentSearchForm
 
 from .models import Payment
-from .filters import PaymentSearchQueryParameterMapping, PaymentTimeRangeFilter
+from .filters import PaymentSearchUrlQueryKwargMapping, PaymentTimeRangeFilter
 from .forms import PaymentFiltersForm
 from .utils import get_user_payments
 
@@ -39,7 +39,7 @@ class PaymentSearchView(LoginRequiredMixin, SearchListView):
     template_name = "payments/list_payments.html.development"
     context_object_name = "payments"
     paginate_by = settings.MAX_ITEMS_PER_PAGE
-    search_query_parameter_mapping_class = PaymentSearchQueryParameterMapping
+    search_url_query_kwarg_mapping_class = PaymentSearchUrlQueryKwargMapping
     model_fields_filter_class = PaymentTimeRangeFilter
 
     def get_queryset(self):

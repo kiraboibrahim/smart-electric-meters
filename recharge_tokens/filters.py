@@ -14,7 +14,7 @@ class RechargeTokenListFilter(django_filters.FilterSet):
         fields = ["generated_at", "meter__manufacturer"]
 
 
-class RechargeTokenSearchQueryParameterMapping(BaseFilter):
+class RechargeTokenSearchUrlQueryKwargMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

@@ -5,7 +5,7 @@ from shared.forms import SearchForm as RechargeTokenSearchForm
 from shared.views import FilterListView, SearchListView
 
 from .models import RechargeToken
-from .filters import RechargeTokenListFilter, RechargeTokenSearchQueryParameterMapping
+from .filters import RechargeTokenListFilter, RechargeTokenSearchUrlQueryKwargMapping
 from .forms import RechargeTokenFiltersForm
 from .utils import get_user_recharge_tokens
 
@@ -38,7 +38,8 @@ class RechargeTokenSearchView(LoginRequiredMixin, SearchListView):
     template_name = "recharge_tokens/list_recharge_tokens.html.development"
     paginate_by = settings.MAX_ITEMS_PER_PAGE
     context_object_name = "recharge_tokens"
-    search_query_parameter_mapping_class = RechargeTokenSearchQueryParameterMapping
+
+    search_url_query_kwarg_mapping_class = RechargeTokenSearchUrlQueryKwargMapping
     model_fields_filter_class = RechargeTokenListFilter
 
     def get_queryset(self):

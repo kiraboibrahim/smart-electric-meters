@@ -13,7 +13,7 @@ class PaymentTimeRangeFilter(django_filters.FilterSet):
         fields = ['paid_at']
 
 
-class PaymentSearchQueryParameterMapping(BaseFilter):
+class PaymentSearchUrlQueryKwargMapping(BaseFilter):
     search_fields = {
         "query": {
             "operator": "__icontains",

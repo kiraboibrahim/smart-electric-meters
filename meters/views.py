@@ -26,7 +26,7 @@ from vendor_api.vendors.exceptions import MeterRegistrationException, EmptyToken
     MeterVendorAPINotFoundException
 
 from .models import Meter
-from .filters import MeterSearchQueryParameterMapping, AdminMeterListFilter, ManagerMeterListFilter
+from .filters import MeterSearchUrlQueryKwargMapping, AdminMeterListFilter, ManagerMeterListFilter
 from .forms import AddMeterForm, ManagerMeterFiltersForm, AdminMeterFiltersForm, RechargeMeterForm
 from .mixins import MetersContextMixin
 from .utils import get_user_meters
@@ -52,15 +52,16 @@ class MeterListView(LoginRequiredMixin, FilterListView):
         return self.template_name
 
     def get_queryset(self):
-        meters = super().get_queryset()
-        meters = get_user_meters(self.request.user, initial_meters=meters)
+        meters = get_user_meters(self.request.user, initial_meters=super().get_queryset())
         return meters
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        meter_filters_form_class = ManagerMeterFiltersForm if self.request.user.is_manager() else AdminMeterFiltersForm
-        context["filters_form"] = meter_filters_form_class(self.request.GET)
-        context["meter_search_form"] = MeterSearchForm(self.request.GET)
+        context.update({
+            "meter_search_form": MeterSearchForm(self.request.GET),
+            "filters_form": ManagerMeterFiltersForm(self.request.GET) if self.request.user.is_manager() else
+            AdminMeterFiltersForm(self.request.GET),
+        })
         return context
 
 
@@ -72,9 +73,10 @@ class MeterSearchView(LoginRequiredMixin, SearchListView):
         "add_meter_form": AddMeterForm(),
         "add_meter_category_form": AddMeterCategoryForm()
     }
-
     paginate_by = settings.MAX_ITEMS_PER_PAGE
-    search_query_parameter_mapping_class = MeterSearchQueryParameterMapping
+
+    search_url_query_kwarg_mapping_class = MeterSearchUrlQueryKwargMapping
+    model_list_filter_class = AdminMeterListFilter
 
     def get_model_list_filter_class(self):
         if self.request.user.is_manager():
@@ -87,15 +89,16 @@ class MeterSearchView(LoginRequiredMixin, SearchListView):
         return self.template_name
 
     def get_queryset(self):
-        meters = super().get_queryset()
-        meters = get_user_meters(self.request.user, initial_meters=meters)
+        meters = get_user_meters(self.request.user, initial_meters=super().get_queryset())
         return meters
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        meter_filter_form_class = ManagerMeterFiltersForm if self.request.user.is_manager() else AdminMeterFiltersForm
-        context["filters_form"] = meter_filter_form_class(self.request.GET)
-        context["meter_search_form"] = MeterSearchForm(self.request.GET)
+        context.update({
+            "filters_form": ManagerMeterFiltersForm(self.request.GET) if self.request.user.is_manager() else
+            AdminMeterFiltersForm(self.request.GET),
+            "meter_search_form": MeterSearchForm(self.request.GET),
+        })
         return context
 
 
@@ -165,10 +168,10 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
 
     def get(self, request, *args, **kwargs):
         self.object = meter = self.get_object()
-        recharge_meter_form = RechargeMeterForm(request.user, initial={"meter_no": meter.meter_no,
-                                                                       "price_per_unit": meter.unit_price
-                                                                       }
-                                                )
+        initial_recharge_meter_form_data = {"meter_no": meter.meter_no,
+                                            "price_per_unit": meter.unit_price
+                                            }
+        recharge_meter_form = RechargeMeterForm(request.user, initial=initial_recharge_meter_form_data)
         context = self.get_context_data(recharge_meter_form=recharge_meter_form)
         return self.render_to_response(context)
 

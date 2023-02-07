@@ -29,7 +29,7 @@ from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangeP
 from .account_types import ADMIN
 from .utils import get_add_user_form_class, get_users
 from .models import UnitPrice
-from .filters import UserSearchQueryParameterMapping
+from .filters import UserSearchUrlQueryKwargMapping
 from .mixins import UsersContextMixin
 
 User = get_user_model()
@@ -90,7 +90,7 @@ class UserSearchView(SearchListView):
         "user_search_form": UserSearchForm()
     }
     paginate_by = settings.MAX_ITEMS_PER_PAGE
-    search_query_parameter_mapping_class = UserSearchQueryParameterMapping
+    search_url_query_kwarg_mapping_class = UserSearchUrlQueryKwargMapping
 
     def get_queryset(self):
         users = super().get_queryset()
@@ -116,8 +116,7 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UsersC
         return super(UserCreateView, self).post(*args, **kwargs)
 
     def get_form_class(self):
-        logged_in_user = self.request.user
-        return get_add_user_form_class(logged_in_user)
+        return get_add_user_form_class(self.request.user)
 
     def get_success_message(self, cleaned_data):
         user_account_type = cleaned_data["account_type"]
