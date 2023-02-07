@@ -1,12 +1,11 @@
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
 
-from shared.views import SearchListView, FilterListView
 from shared.forms import SearchForm as PaymentSearchForm
-
-from .models import Payment
+from shared.views import SearchListView, FilterListView
 from .filters import PaymentSearchUrlQueryKwargMapping, PaymentTimeRangeFilter
 from .forms import PaymentFiltersForm
+from .models import Payment
 from .utils import get_user_payments
 
 

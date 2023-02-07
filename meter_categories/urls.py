@@ -1,8 +1,7 @@
 from django.urls import path, register_converter
 
-from shared.converters import HashIdConverter
 from meter_categories.views import MeterCategoryCreateView
-
+from shared.converters import HashIdConverter
 
 register_converter(HashIdConverter, "hashid")
 

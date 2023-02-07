@@ -1,7 +1,6 @@
 from django.db import models
 
 from meters.models import Meter
-
 from payments.models import Payment
 
 

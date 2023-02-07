@@ -1,34 +1,29 @@
 import logging
 
-from django.shortcuts import redirect
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
-from django.views.generic.edit import UpdateView, CreateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.messages.views import SuccessMessageMixin
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.views import View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from django.views.generic.detail import SingleObjectMixin
-from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
-from django.conf import settings
-from django.views import View
-
-from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
-from shared.views import SearchListView, FilterListView
-from shared.forms import SearchForm as MeterSearchForm
+from django.views.generic.edit import UpdateView, CreateView
 
 from meter_categories.forms import AddMeterCategoryForm
-
-from recharge_tokens.models import RechargeToken
-
 from payments.models import Payment
-
+from recharge_tokens.models import RechargeToken
+from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
+from shared.forms import SearchForm as MeterSearchForm
+from shared.views import SearchListView, FilterListView
 from vendor_api.vendors.exceptions import MeterRegistrationException, EmptyTokenResponseException, \
     MeterVendorAPINotFoundException
-
-from .models import Meter
 from .filters import MeterSearchUrlQueryKwargMapping, AdminMeterListFilter, ManagerMeterListFilter
 from .forms import AddMeterForm, ManagerMeterFiltersForm, AdminMeterFiltersForm, RechargeMeterForm
 from .mixins import MetersContextMixin
+from .models import Meter
 from .utils import get_user_meters
 
 logger = logging.getLogger(__name__)

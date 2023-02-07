@@ -3,10 +3,9 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 from shared.forms import SearchForm as RechargeTokenSearchForm
 from shared.views import FilterListView, SearchListView
-
-from .models import RechargeToken
 from .filters import RechargeTokenListFilter, RechargeTokenSearchUrlQueryKwargMapping
 from .forms import RechargeTokenFiltersForm
+from .models import RechargeToken
 from .utils import get_user_recharge_tokens
 
 

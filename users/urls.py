@@ -1,9 +1,8 @@
-from django.urls import path, register_converter
 from django.contrib.auth import views as auth_views
+from django.urls import path, register_converter
 
 from shared.converters import HashIdConverter
 from users import views as user_views
-
 
 register_converter(HashIdConverter, "hashid")
 

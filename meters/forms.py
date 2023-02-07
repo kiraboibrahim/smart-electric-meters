@@ -4,14 +4,10 @@ from functools import cached_property
 from django import forms
 from django.contrib.auth import get_user_model
 
-from users.account_types import MANAGER
-
-from meter_categories.models import MeterCategory
-
 from manufacturers.models import MeterManufacturer
-
+from meter_categories.models import MeterCategory
+from users.account_types import MANAGER
 from .models import Meter
-
 
 User = get_user_model()
 

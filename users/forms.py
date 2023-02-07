@@ -1,16 +1,14 @@
 from functools import cached_property
 
-from django.forms import ModelForm
 from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.forms import PasswordResetForm
 from django.db.models import ObjectDoesNotExist
+from django.forms import ModelForm
 
 from shared.widgets import PasswordInput
-
 from .account_types import ADMIN, MANAGER
 from .models import UnitPrice
-
 
 User = get_user_model()
 

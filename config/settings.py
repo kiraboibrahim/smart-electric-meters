@@ -1,8 +1,7 @@
 import os
 
-from django.contrib import messages
-
 import environ
+from django.contrib import messages
 
 env = environ.Env(DEBUG=(bool, False))
 

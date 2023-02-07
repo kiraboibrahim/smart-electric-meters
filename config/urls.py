@@ -1,7 +1,6 @@
-from django.urls import path, include, re_path
 from django.contrib import admin
+from django.urls import path, include, re_path
 from django.views.generic import RedirectView
-
 
 urlpatterns = [
     path("", RedirectView.as_view(pattern_name="login"), name="index"),

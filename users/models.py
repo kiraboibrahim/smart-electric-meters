@@ -1,10 +1,10 @@
-from django.db import models
-from django.db.models import Q
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.db import models
+from django.db.models import Q
 
-from .managers import UserManager
 from .account_types import DJANGO_SUPERUSER, SUPER_ADMIN, ADMIN, MANAGER, DEFAULT_MANAGER
+from .managers import UserManager
 from .validators import is_not_default_manager
 
 

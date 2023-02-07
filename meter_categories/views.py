@@ -1,18 +1,16 @@
 from django.contrib import messages
 from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
 from django.shortcuts import redirect
+from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic.edit import CreateView, UpdateView
 from django.views.generic.detail import SingleObjectMixin
-
-from shared.forms import SearchForm as MeterSearchForm
-from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
+from django.views.generic.edit import CreateView, UpdateView
 
 from meter_categories.models import MeterCategory
-
-from meters.mixins import MetersContextMixin
 from meters.forms import AddMeterForm, AdminMeterFiltersForm
+from meters.mixins import MetersContextMixin
+from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
+from shared.forms import SearchForm as MeterSearchForm
 
 
 class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, MetersContextMixin, CreateView):

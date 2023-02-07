@@ -1,7 +1,6 @@
 from django import forms
 
 from manufacturers.models import MeterManufacturer
-
 from shared.widgets import DateInput
 
 

@@ -1,37 +1,36 @@
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
+from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import SetPasswordForm
-from django.urls import reverse
-from django.utils.encoding import force_bytes
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.messages.views import SuccessMessageMixin
+from django.contrib.sites.shortcuts import get_current_site
+from django.core.mail import send_mail
+from django.http import HttpResponseRedirect
+from django.shortcuts import render, get_object_or_404, redirect
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.urls import reverse_lazy
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.views import View
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
 from django.views.generic.detail import SingleObjectMixin
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import HttpResponseRedirect
-from django.conf import settings
-from django.template.loader import render_to_string
-from django.views.generic.list import ListView
 from django.views.generic.edit import UpdateView, CreateView
-from django.contrib.messages.views import SuccessMessageMixin
-from django.urls import reverse_lazy
-from django.views import View
-from django.core.mail import send_mail
-from django.contrib.sites.shortcuts import get_current_site
+from django.views.generic.list import ListView
 
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin, ManagerRequiredMixin
-from shared.views import SearchListView
 from shared.forms import SearchForm as UserSearchForm
-
+from shared.views import SearchListView
+from .account_types import ADMIN, MANAGER
+from .filters import UserSearchUrlQueryKwargMapping
 from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, \
     ManagerUnitPriceEditForm
-from .account_types import ADMIN, MANAGER
-from .utils import get_add_user_form_class, get_users
-from .models import UnitPrice
-from .filters import UserSearchUrlQueryKwargMapping
 from .mixins import UsersContextMixin
+from .models import UnitPrice
+from .utils import get_add_user_form_class, get_users
 
 User = get_user_model()
 
@@ -336,12 +335,14 @@ class ResetPassword(ContextMixin, SuccessMessageMixin, TemplateResponseMixin, Vi
         return password_reset_email_context
 
 
-class LoginAsManagerView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, View):
+class LoginAsManagerView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, SingleObjectMixin, View):
+    success_message = "Logged in as: %(name)s"
 
     def get(self, request, *args, **kwargs):
         manager = self.get_object()
         logout(request)
         login(request, manager)
+        messages.success(request, self.get_success_message({"name": manager.full_name}))
         return redirect(reverse("profile"))
 
     def get_queryset(self):

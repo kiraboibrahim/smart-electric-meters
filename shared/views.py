@@ -1,6 +1,5 @@
-from django.views.generic.list import ListView
 from django.core.exceptions import ImproperlyConfigured
-
+from django.views.generic.list import ListView
 from search_views.filters import build_q
 
 

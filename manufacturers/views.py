@@ -1,16 +1,15 @@
-from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from django.urls import reverse_lazy
-from django.views.generic.list import ListView
-from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.contrib.messages.views import SuccessMessageMixin
 from django.http import HttpResponseRedirect
+from django.urls import reverse_lazy
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
+from django.views.generic.list import ListView
 
+from manufacturers.filters import MeterManufacturerSearchUrlQueryKwargMapping
+from manufacturers.forms import AddMeterManufacturerForm, MeterManufacturerSearchForm
+from manufacturers.models import MeterManufacturer
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
 from shared.views import SearchListView
-
-from manufacturers.models import MeterManufacturer
-from manufacturers.forms import AddMeterManufacturerForm, MeterManufacturerSearchForm
-from manufacturers.filters import MeterManufacturerSearchUrlQueryKwargMapping
 
 
 class MeterManufacturerCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, CreateView):

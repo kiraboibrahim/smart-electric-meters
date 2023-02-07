@@ -7,8 +7,6 @@ class UserConfig(AppConfig):
     name = 'users'
 
     def ready(self):
-        from . import signals
-
         from .account_types import DEFAULT_MANAGER
         from .models import UnitPrice
 

@@ -1,9 +1,8 @@
 from django.urls import path, register_converter
 
+from manufacturers.views import MeterManufacturerCreateView, MeterManufacturerEditView, MeterManufacturerListView, \
+    MeterManufacturerSearchView, MeterManufacturerDeleteView
 from shared.converters import HashIdConverter
-
-from manufacturers.views import MeterManufacturerCreateView, MeterManufacturerEditView, MeterManufacturerListView, MeterManufacturerSearchView, MeterManufacturerDeleteView
-
 
 register_converter(HashIdConverter, "hashid")
 

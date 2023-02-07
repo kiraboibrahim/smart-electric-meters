@@ -1,6 +1,5 @@
-from shared.utils.paginator import paginate_queryset
 from shared.forms import SearchForm as MeterSearchForm
-
+from shared.utils.paginator import paginate_queryset
 from .utils import get_user_meters
 
 

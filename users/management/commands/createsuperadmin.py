@@ -1,14 +1,13 @@
-import sys
 import getpass
+import sys
 
-from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from django.contrib.auth import password_validation
-from django.forms import ValidationError
+from django.core.management.base import BaseCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS
-from django.utils.text import capfirst
+from django.forms import ValidationError
 from django.utils.functional import cached_property
-
+from django.utils.text import capfirst
 
 PASSWORD_FIELD = "password"
 

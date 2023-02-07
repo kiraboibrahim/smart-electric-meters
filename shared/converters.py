@@ -1,6 +1,5 @@
-from hashids import Hashids
-
 from django.conf import settings
+from hashids import Hashids
 
 hashids = Hashids(settings.HASHIDS_SALT, min_length=14)
 

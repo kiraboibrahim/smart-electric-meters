@@ -1,5 +1,5 @@
-from search_views.filters import BaseFilter
 import django_filters
+from search_views.filters import BaseFilter
 
 from .models import Payment
 

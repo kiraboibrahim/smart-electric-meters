@@ -1,6 +1,7 @@
 from functools import cached_property
-from django.db import models
+
 from django.core.validators import MaxValueValidator
+from django.db import models
 
 from .validators import is_not_default_meter_category
 

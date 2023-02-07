@@ -1,20 +1,16 @@
 import collections
 import functools
 
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db import models
 from django.db.models import Q
-from django.contrib.auth import get_user_model
-from django.conf import settings
 
 import vendor_api.models
-
-from users.account_types import MANAGER, DEFAULT_MANAGER
-
 from manufacturers.models import MeterManufacturer
-
 from meter_categories.models import MeterCategory
 from meter_categories.utils import get_default_meter_category
-
+from users.account_types import MANAGER, DEFAULT_MANAGER
 
 User = get_user_model()
 RechargeToken = collections.namedtuple("RechargeToken",
