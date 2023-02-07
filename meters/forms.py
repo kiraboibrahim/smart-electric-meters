@@ -65,6 +65,8 @@ class RechargeMeterForm(forms.Form):
         gross_recharge_amount = self.cleaned_data.get("gross_recharge_amount")
         if self.meter is None:
             self.add_error("meter_no", "Meter not found")
+        elif not self.meter.is_active:
+            self.add_error("meter_no", "Meter is not active")
         else:
             self.cleaned_data["meter"] = self.meter  # Add meter to cleaned data to be retrieved by view
             if gross_recharge_amount <= self.minimum_recharge_amount:
