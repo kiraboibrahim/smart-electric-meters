@@ -6,7 +6,7 @@ from search_views.filters import build_q
 
 class SearchListView(ListView):
     model_list_filter_class = None
-    search_query_parameter_mapping_class = None
+    search_url_query_kwarg_mapping_class = None
     http_method_names = ["get"]
 
     def get_model_list_filter_class(self):
@@ -14,7 +14,7 @@ class SearchListView(ListView):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        filters = build_q(self.get_search_query_parameter_mapping_class().get_search_fields(), self.request.GET)
+        filters = build_q(self.get_search_url_query_kwarg_mapping_class().get_search_fields(), self.request.GET)
         queryset = queryset.filter(filters)
         # Filter search results based on model fields if specified
         model_fields_filter_class = self.get_model_list_filter_class()
@@ -22,10 +22,10 @@ class SearchListView(ListView):
             queryset = self.model_list_filter_class(self.request.GET, queryset=queryset).qs
         return queryset
 
-    def get_search_query_parameter_mapping_class(self):
-        if self.search_query_parameter_mapping_class is None:
-            raise ImproperlyConfigured("search_query_parameter_mapping_class attribute is missing")
-        return self.search_query_parameter_mapping_class
+    def get_search_url_query_kwarg_mapping_class(self):
+        if self.search_url_query_kwarg_mapping_class is None:
+            raise ImproperlyConfigured("search_url_query_kwarg_mapping_class attribute is missing")
+        return self.search_url_query_kwarg_mapping_class
 
 
 class FilterListView(ListView):
