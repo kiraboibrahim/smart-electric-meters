@@ -1,12 +1,13 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.forms import SetPasswordForm
 from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic.base import ContextMixin, TemplateResponseMixin
+from django.views.generic.detail import SingleObjectMixin
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -26,7 +27,7 @@ from shared.forms import SearchForm as UserSearchForm
 
 from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, \
     ManagerUnitPriceEditForm
-from .account_types import ADMIN
+from .account_types import ADMIN, MANAGER
 from .utils import get_add_user_form_class, get_users
 from .models import UnitPrice
 from .filters import UserSearchUrlQueryKwargMapping
@@ -333,3 +334,16 @@ class ResetPassword(ContextMixin, SuccessMessageMixin, TemplateResponseMixin, Vi
                 self.request.user_agent.os.family, self.request.user_agent.os.version_string),
         }
         return password_reset_email_context
+
+
+class LoginAsManagerView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, View):
+
+    def get(self, request, *args, **kwargs):
+        manager = self.get_object()
+        logout(request)
+        login(request, manager)
+        return redirect(reverse("profile"))
+
+    def get_queryset(self):
+        return User.objects.filter(account_type=MANAGER)
+

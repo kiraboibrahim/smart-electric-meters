@@ -33,4 +33,5 @@ urlpatterns = [
     path("profile", user_views.profile, name="profile"),
     path("profile/edit", user_views.UserProfileEditView.as_view(), name="edit_user_profile"),
     path("prices/edit", user_views.UnitPriceEditView.as_view(), name="edit_unit_price"),
+    path("login-as-manager/<hashid:pk>", user_views.LoginAsManagerView.as_view(), name="login-as-manager"),
 ]
