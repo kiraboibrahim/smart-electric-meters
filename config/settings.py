@@ -3,18 +3,21 @@ import os
 import environ
 from django.contrib import messages
 
-env = environ.Env(DEBUG=(bool, False))
+DEBUG = True
+
+env = environ.Env()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Read django project settings
-environ.Env.read_env(os.path.join(PROJECT_DIR, ".env"))
+if DEBUG is True:
+    environ.Env.read_env(os.path.join(PROJECT_DIR, "development.env"))
+else:
+    environ.Env.read_env(os.path.join(PROJECT_DIR, "production.env"))
 
 # Read Stron Power settings
 environ.Env.read_env(os.path.join(BASE_DIR, "vendor_api", "vendors", "stron_power", ".env"))
-
-DEBUG = env("DEBUG")
 
 SECRET_KEY = env("SECRET_KEY")
 
