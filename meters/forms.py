@@ -54,7 +54,7 @@ class RechargeMeterForm(forms.Form):
         self.user = user
         super().__init__(*args, **kwargs)
         if self.user.is_manager():
-            self.fields["price_per_unit"].disabled = True
+            self.fields["price_per_unit"].widget.attrs = {"readonly": "readonly"}
 
     meter_no = forms.CharField(max_length=11, label="Meter number")
     gross_recharge_amount = forms.IntegerField(label="Recharge amount",
@@ -62,17 +62,18 @@ class RechargeMeterForm(forms.Form):
     price_per_unit = forms.IntegerField()
 
     def clean(self):
-        gross_recharge_amount = self.cleaned_data.get("gross_recharge_amount")
+        cleaned_data = super().clean()
+        gross_recharge_amount = cleaned_data.get("gross_recharge_amount")
         if self.meter is None:
             self.add_error("meter_no", "Meter not found")
         elif not self.meter.is_active:
             self.add_error("meter_no", "Meter is not active")
         else:
-            self.cleaned_data["meter"] = self.meter  # Add meter to cleaned data to be retrieved by view
+            cleaned_data["meter"] = self.meter  # Add meter to cleaned data to be retrieved by view
             if gross_recharge_amount <= self.minimum_recharge_amount:
                 self.add_error("gross_recharge_amount", "Amount should be greater than %d" %
                                self.minimum_recharge_amount)
-        return self.cleaned_data
+        return cleaned_data
 
     @cached_property
     def meter(self):
