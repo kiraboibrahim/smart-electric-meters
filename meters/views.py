@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class MeterListView(LoginRequiredMixin, FilterListView):
+class MeterListView(LoginRequiredMixin, MetersContextMixin, FilterListView):
     model = Meter
     template_name = "meters/list_meters.html.development"
     context_object_name = "meters"
@@ -51,7 +51,8 @@ class MeterListView(LoginRequiredMixin, FilterListView):
         return meters
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = self.get_meters_context()
+        context.update(super().get_context_data(**kwargs))
         context.update({
             "meter_search_form": MeterSearchForm(self.request.GET),
             "filters_form": ManagerMeterFiltersForm(self.request.GET) if self.request.user.is_manager() else
@@ -60,7 +61,7 @@ class MeterListView(LoginRequiredMixin, FilterListView):
         return context
 
 
-class MeterSearchView(LoginRequiredMixin, SearchListView):
+class MeterSearchView(LoginRequiredMixin, MetersContextMixin, SearchListView):
     model = Meter
     template_name = "meters/list_meters.html.development"
     context_object_name = "meters"
@@ -88,7 +89,8 @@ class MeterSearchView(LoginRequiredMixin, SearchListView):
         return meters
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
+        context = self.get_meters_context()
+        context.update(super().get_context_data(**kwargs))
         context.update({
             "filters_form": ManagerMeterFiltersForm(self.request.GET) if self.request.user.is_manager() else
             AdminMeterFiltersForm(self.request.GET),
@@ -131,7 +133,7 @@ class MeterCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Meter
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["add_meter_form"] = context["form"]
-        context.update(self.get_meters_context(self.request.user))
+        context.update(self.get_meters_context())
         return context
 
 
@@ -161,6 +163,11 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
     error_message = None
     object = None
 
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            return "managers/meters/recharge_meter.html.development"
+        return self.template_name
+
     def get(self, request, *args, **kwargs):
         self.object = meter = self.get_object()
         initial_recharge_meter_form_data = {"meter_no": meter.meter_no,
@@ -171,6 +178,8 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
+        print("="*100)
+        print(request.POST)
         recharge_meter_form = RechargeMeterForm(request.user, request.POST)
         if recharge_meter_form.is_valid():
             meter_manufacturer_name = recharge_meter_form.meter.manufacturer_name

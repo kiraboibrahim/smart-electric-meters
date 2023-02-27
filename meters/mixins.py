@@ -1,3 +1,4 @@
+from meter_categories.models import MeterCategory
 from shared.forms import SearchForm as MeterSearchForm
 from shared.utils.paginator import paginate_queryset
 from .utils import get_user_meters
@@ -23,6 +24,7 @@ class MetersContextMixin(object):
             "paginator": paginator,
             "page_obj": page_obj,
             "meters": page_obj.object_list,
-            "meter_search_form": MeterSearchForm(self.request.GET)
+            "meter_search_form": MeterSearchForm(self.request.GET),
+            "meter_categories": MeterCategory.objects.all(),
         }
         return context
