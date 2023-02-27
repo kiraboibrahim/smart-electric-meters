@@ -69,7 +69,9 @@ class PriceCategory:
 
 
 class RechargeToken:
-    token_no = None
-    num_of_units = None
-    unit = None
+
+    def __init__(self, token_no, num_of_units, unit):
+        self.token_no = token_no
+        self.num_of_units = num_of_units
+        self.unit = unit
 
