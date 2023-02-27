@@ -9,6 +9,8 @@ migrations
 static
 templates
 vendor_api/vendors/stron_power
+production.env
+development.env
 # Sqlite #
 *.sqlite3
 
