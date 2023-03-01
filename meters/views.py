@@ -160,7 +160,6 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
         "meter_search_form": MeterSearchForm()
     }
     success_message = "Token: %(token_no)s Units: %(num_of_units)s%(unit)s"
-    error_message = None
     object = None
 
     def get_template_names(self):
@@ -170,39 +169,22 @@ class RechargeMeterView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
 
     def get(self, request, *args, **kwargs):
         self.object = meter = self.get_object()
-        initial_recharge_meter_form_data = {"meter_no": meter.meter_no,
-                                            "price_per_unit": meter.unit_price
-                                            }
+        initial_recharge_meter_form_data = {"meter_no": meter.meter_no, "price_per_unit": meter.unit_price}
         recharge_meter_form = RechargeMeterForm(request.user, initial=initial_recharge_meter_form_data)
         context = self.get_context_data(recharge_meter_form=recharge_meter_form)
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
-        print("="*100)
-        print(request.POST)
         recharge_meter_form = RechargeMeterForm(request.user, request.POST)
         if recharge_meter_form.is_valid():
-            meter_manufacturer_name = recharge_meter_form.meter.manufacturer_name
             try:
                 recharge_token = recharge_meter_form.recharge()
                 self.save_recharge_token(recharge_token)
-                success_message = self.get_success_message({"token_no": recharge_token.token_no,
-                                                            "num_of_units": recharge_token.num_of_units,
-                                                            "unit": recharge_token.unit
-                                                            })
+                success_message = self.get_success_message({"token_no": recharge_token.token_no, "num_of_units": recharge_token.num_of_units,"unit": recharge_token.unit})
                 messages.success(request, success_message)
-            except MeterVendorAPINotFoundException:
-                self.error_message = "The %s API has not been developed yet. Please contact the developer" % \
-                                     meter_manufacturer_name
-            except EmptyTokenResponseException:
-                self.error_message = "No token received. Contact %s's customer helpline or support" % \
-                                     meter_manufacturer_name
             except Exception as exc:
                 logger.exception(str(exc))
-                self.error_message = "Something went wrong"
-            if self.error_message:
-                messages.error(request, self.error_message)
-
+                messages.error(request, "Something went wrong")
         context = self.get_context_data(recharge_meter_form=recharge_meter_form)
         return self.render_to_response(context=context)
 
