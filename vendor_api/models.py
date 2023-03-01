@@ -3,69 +3,80 @@ import uuid
 from vendor_api.vendors.api_factory import MeterVendorAPIFactoryImpl
 
 
-class MeterCustomer:
-    def __init__(self, meter_customer):
-        self.__meter_customer = meter_customer
+class Manager:
+    def __init__(self, manager):
+        self._manager = manager
 
     @property
     def first_name(self):
-        return self.__meter_customer.first_name
+        return self._manager.first_name
 
     @property
     def last_name(self):
-        return self.__meter_customer.last_name
+        return self._manager.last_name
 
     @property
     def full_name(self):
-        return self.__meter_customer.full_name
+        return self._manager.full_name
 
     @property
     def email(self):
-        return self.__meter_customer.email
+        return self._manager.email
 
     @property
     def address(self):
-        return self.__meter_customer.address
+        return self._manager.address
 
     @property
     def id(self):
-        return "%d_%s" % (self.__meter_customer.id, str(uuid.uuid4()))
+        return "%d_%s" % (self._manager.id, str(uuid.uuid4()))
 
     @property
     def phone_no(self):
-        return self.__meter_customer.phone_no
+        return self._manager.phone_no
 
 
 class Meter:
-    owner = None
-
     def __init__(self, meter):
-        self.__meter = meter
-        self.owner = MeterCustomer(meter.manager)
+        self._meter = meter
+        self._manager = Manager(meter.manager)
 
     @property
     def meter_no(self):
-        return self.__meter.meter_no
+        return self._meter.meter_no
+
+    @property
+    def manager_last_name(self):
+        return self._manager.last_name
+
+    @property
+    def manager_full_name(self):
+        return self._manager.full_name
+
+    @property
+    def manager_email(self):
+        return self._manager.email
+
+    @property
+    def manager_id(self):
+        return self._manager.id
+
+    @property
+    def phone_no(self):
+        return self._manager.phone_no
 
     def register(self):
-        meter_vendor_api = self.__get_vendor_api()
+        meter_vendor_api = self._get_vendor_api()
         return meter_vendor_api.register_meter(self)
 
     def recharge(self, num_of_units):
-        meter_vendor_api = self.__get_vendor_api()
+        meter_vendor_api = self._get_vendor_api()
         return meter_vendor_api.recharge_meter(self, num_of_units)
 
-    def __get_vendor_api(self):
-        meter_vendor_name = self.__meter.manufacturer_name
+    def _get_vendor_api(self):
+        meter_vendor_name = self._meter.manufacturer_name
         meter_vendor_api = MeterVendorAPIFactoryImpl.get(meter_vendor_name)
         return meter_vendor_api
-
-
-class PriceCategory:
-    """
-    Implement this model and the respective payload
-    """
-    pass
 
 
 class RechargeToken:
@@ -75,3 +86,9 @@ class RechargeToken:
         self.num_of_units = num_of_units
         self.unit = unit
 
+
+class PriceCategory:
+    """
+    Implement this model and the respective payload
+    """
+    pass
