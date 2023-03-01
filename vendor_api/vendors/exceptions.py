@@ -2,7 +2,7 @@ class MeterVendorAPINotFoundException(Exception):
     pass
 
 
-class MissingPayloadAttributeException(Exception):
+class PayloadFieldException(Exception):
     pass
 
 
@@ -24,6 +24,6 @@ class MeterRegistrationException(MeterVendorAPIException):
 
 class EmptyTokenResponseException(MeterVendorAPIException):
 
-    def __init__(self, status_code, message=""):
-        message = message if message else "No token received. Contact the meters vendor support"
+    def __init__(self, status_code):
+        message = "No token received. Contact the meters vendor support"
         super().__init__(status_code, message)
