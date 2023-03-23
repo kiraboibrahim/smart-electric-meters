@@ -12,6 +12,7 @@ from meters.mixins import MetersContextMixin
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin
 from shared.forms import SearchForm as MeterSearchForm
 
+from .mixins import MeterCategorySingleObjectMixin
 
 class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, MetersContextMixin, CreateView):
     model = MeterCategory
@@ -30,21 +31,22 @@ class MeterCategoryCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixi
 
     def get_context_data(self, **kwargs):
         context = super(MeterCategoryCreateView, self).get_context_data(**kwargs)
-        context.update(self.get_meters_context(self.request.user))
+        context.update(self.get_meters_context())
         context["add_meter_category_form"] = context.get("form")
         return context
 
 
-class MeterCategoryEditView(AdminOrSuperAdminRequiredMixin, UpdateView, SuccessMessageMixin):
+class MeterCategoryEditView(AdminOrSuperAdminRequiredMixin, MeterCategorySingleObjectMixin, SuccessMessageMixin, UpdateView):
     model = MeterCategory
     fields = "__all__"
+    context_object_name = "meter_category"
     pk_url_kwarg = "meter_category_id"
     success_url = reverse_lazy("list_meters")
-    success_message = "Meter category %(label) updated"
+    success_message = "Meter category %(label)s updated"
     template_name = "meter_categories/edit_meter_category.html.development"
 
 
-class MeterCategoryDeleteView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, SuccessMessageMixin, View):
+class MeterCategoryDeleteView(AdminOrSuperAdminRequiredMixin, MeterCategorySingleObjectMixin, SuccessMessageMixin, View):
     model = MeterCategory
     pk_url_kwarg = "meter_category_id"
     http_method_names = ["get"]
@@ -57,5 +59,5 @@ class MeterCategoryDeleteView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin,
             messages.error(request, self.failure_message)
         else:
             meter_category.delete()
-            messages.success(request, self.get_success_message())
+            messages.success(request, self.get_success_message({}))
         return redirect(reverse_lazy("list_meters"))
