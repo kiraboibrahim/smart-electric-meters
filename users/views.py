@@ -24,10 +24,12 @@ from django.views.generic.list import ListView
 from shared.auth.mixins import AdminOrSuperAdminRequiredMixin, ManagerRequiredMixin
 from shared.forms import SearchForm as UserSearchForm
 from shared.views import SearchListView
+from manufacturers.models import MeterManufacturer
+from meters.models import Meter
+from recharge_tokens.models import RechargeToken
 from .account_types import ADMIN, MANAGER
 from .filters import UserSearchUrlQueryKwargMapping
-from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, \
-    ManagerUnitPriceEditForm
+from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, ManagerUnitPriceEditForm
 from .mixins import UsersContextMixin
 from .models import UnitPrice
 from .utils import get_add_user_form_class, get_users
@@ -38,9 +40,22 @@ User = get_user_model()
 @login_required
 def dashboard(request):
     template_name = "users/dashboard.html.development"
+    context = {}
+    all_meters = Meter.objects.all()
+    all_recharge_tokens = RechargeToken.objects.all()
     if request.user.is_manager():
+        context["meter_count"] = all_meters.filter(manager=request.user).count()
+        context["recharge_token_count"] = all_recharge_tokens.filter(payment__user=request.user).count()
         template_name = "managers/users/dashboard.html.development"
-    return render(request, template_name)
+    elif request.user.is_admin() or request.user.is_super_admin():
+        all_meters = list(all_meters)
+        all_manufacturers = MeterManufacturer.objects.all()
+        context["meter_count"] = len(all_meters)
+        context["inactive_meter_count"] = len(list(filter(lambda meter: meter.is_active != True, all_meters)))
+        context["manufacturer_count"] = all_manufacturers.count()
+        context["user_count"] = User.objects.all().count()
+        context["recharge_token_count"] = all_recharge_tokens.count()
+    return render(request, template_name, context=context)
 
 
 @login_required
