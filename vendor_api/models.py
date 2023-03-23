@@ -62,7 +62,7 @@ class Meter:
         return self._manager.id
 
     @property
-    def phone_no(self):
+    def manager_phone_no(self):
         return self._manager.phone_no
 
     def register(self):
