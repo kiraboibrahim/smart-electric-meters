@@ -29,10 +29,11 @@ from meters.models import Meter
 from recharge_tokens.models import RechargeToken
 from .account_types import ADMIN, MANAGER
 from .filters import UserSearchUrlQueryKwargMapping
-from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, ManagerUnitPriceEditForm
+from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, ManagerUnitPriceEditForm, \
+    CreateUserForm
 from .mixins import UsersContextMixin
 from .models import UnitPrice
-from .utils import get_add_user_form_class, get_users
+from .utils import get_users
 
 User = get_user_model()
 
@@ -90,7 +91,7 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
         return users
 
     def get_context_data(self, **kwargs):
-        add_user_form = get_add_user_form_class(self.request.user)()
+        add_user_form = CreateUserForm.get(self.request.user)
         context = super().get_context_data(**kwargs)
         context["add_user_form"] = add_user_form
         return context
@@ -131,12 +132,12 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UsersC
         return super(UserCreateView, self).post(*args, **kwargs)
 
     def get_form_class(self):
-        return get_add_user_form_class(self.request.user)
+        return CreateUserForm.get(self.request.user).__class__
 
     def get_success_message(self, cleaned_data):
-        user_account_type = cleaned_data["account_type"]
+        account_type = cleaned_data["account_type"]
         designation = "Manager"
-        if user_account_type == ADMIN:
+        if account_type == ADMIN:
             designation = "Administrator"
 
         return self.success_message % dict(
