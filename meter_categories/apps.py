@@ -9,8 +9,4 @@ class MeterCategoryConfig(AppConfig):
     def ready(self):
         from .models import MeterCategory
 
-        MeterCategory.objects.get_or_create(
-            percentage_charge=settings.DEFAULT_METER_CATEGORY_PERCENTAGE_CHARGE,
-            fixed_charge=settings.DEFAULT_METER_CATEGORY_FIXED_CHARGE,
-            label=settings.DEFAULT_METER_CATEGORY_LABEL
-        )
+        MeterCategory.objects.get_or_create(**settings.DEFAULTS["METER_CATEGORY"])

@@ -4,4 +4,4 @@ from .models import MeterCategory
 
 
 def get_default_meter_category():
-    return MeterCategory.objects.get(label=settings.DEFAULT_METER_CATEGORY_LABEL)
+    return MeterCategory.objects.get(label=settings.DEFAULTS["METER_CATEGORY"]["label"])

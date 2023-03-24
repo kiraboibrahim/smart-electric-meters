@@ -42,7 +42,7 @@ class User(AbstractUser):
         return self.account_type == MANAGER
 
     def is_default_manager(self):
-        return self.phone_no == settings.DEFAULT_MANAGER_PHONE_NO
+        return self.phone_no == settings.DEFAULTS["MANAGER"]["phone_no"]
 
     @property
     def price_per_unit(self):
@@ -86,3 +86,7 @@ class UnitPrice(models.Model):
                                    limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER))
     label = models.CharField(default="API-STANDARD", max_length=255)
     price = models.PositiveIntegerField(default=1000)
+
+    def __str__(self):
+        return "{} - UGX {}".format(self.manager, self.price)
+

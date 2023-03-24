@@ -18,25 +18,23 @@ RechargeToken = collections.namedtuple("RechargeToken",
 
 
 def get_default_meter_manager():
-    default_meter_manager = User.objects.get(phone_no=settings.DEFAULT_MANAGER_PHONE_NO)
+    default_meter_manager = User.objects.get(phone_no=settings.DEFAULTS["MANAGER"]["phone_no"])
     return default_meter_manager
 
 
 class Meter(models.Model):
     meter_no = models.CharField("Meter number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(MeterManufacturer, on_delete=models.PROTECT, related_name="meters")
-    manager = models.ForeignKey(User, on_delete=models.PROTECT,
-                                default=get_default_meter_manager(),
+    manager = models.ForeignKey(User, on_delete=models.PROTECT,default=get_default_meter_manager(),
                                 limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER),
-                                null=True, blank=True,
-                                related_name="meters")
+                                null=True, blank=True, related_name="meters")
     category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters",
                                  default=get_default_meter_category)
     is_active = models.BooleanField(default=True)
 
     @functools.cached_property
     def default_manager(self):
-        default_meter_manager = User.objects.get(phone_no=settings.DEFAULT_MANAGER_PHONE_NO)
+        default_meter_manager = User.objects.get(phone_no=settings.DEFAULTS["MANAGER"]["phone_no"])
         return default_meter_manager
 
     def recharge(self, gross_recharge_amount, price_per_unit):

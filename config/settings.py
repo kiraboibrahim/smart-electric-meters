@@ -111,7 +111,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -128,30 +127,9 @@ LOGIN_URL = "/users/login"
 LOGIN_REDIRECT_URL = "/users/dashboard"
 LOGOUT_REDIRECT_URL = LOGIN_URL
 
-TWILIO_ACCOUNT_SID = env("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = env("TWILIO_AUTH_TOKEN")
-TWILIO_PHONE_NO = env("TWILIO_PHONE_NO")
-
-HASHIDS_SALT = env("HASHIDS_SALT")
-
-MESSAGE_TAGS = {
-    messages.constants.ERROR: "danger",
-}
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
-
-MAX_ITEMS_PER_PAGE = 20
-
-DEFAULT_MANAGER_PHONE_NO = env("DEFAULT_MANAGER_PHONE_NO")
-DEFAULT_MANAGER_FIRST_NAME = env("DEFAULT_MANAGER_FIRST_NAME")
-DEFAULT_MANAGER_LAST_NAME = env("DEFAULT_MANAGER_LAST_NAME")
-DEFAULT_MANAGER_ADDRESS = env("DEFAULT_MANAGER_ADDRESS")
-
-DEFAULT_METER_CATEGORY_LABEL = env("DEFAULT_METER_CATEGORY_LABEL")
-DEFAULT_METER_CATEGORY_FIXED_CHARGE = env.int("DEFAULT_METER_CATEGORY_FIXED_CHARGE")
-DEFAULT_METER_CATEGORY_PERCENTAGE_CHARGE = env.int("DEFAULT_METER_CATEGORY_PERCENTAGE_CHARGE")
 
 LOGGING = {
     "version": 1,
@@ -199,5 +177,35 @@ LOGGING = {
         "": {
             "handlers": ["general_file"]
         }
+    }
+}
+
+TWILIO = {
+    "ACCOUNT_SID": env("TWILIO_ACCOUNT_SID"),
+    "AUTH_TOKEN": env("TWILIO_AUTH_TOKEN"),
+    "PHONE_NO": env("TWILIO_PHONE_NO")
+}
+
+HASHIDS_SALT = env("HASHIDS_SALT")
+
+MESSAGE_TAGS = {
+    messages.constants.ERROR: "danger",
+}
+
+# My Settings
+
+MAX_ITEMS_PER_PAGE = 2
+
+DEFAULTS = {
+    "MANAGER": {
+        "phone_no": env("DEFAULT_MANAGER_PHONE_NO"),
+        "first_name": env("DEFAULT_MANAGER_FIRST_NAME"),
+        "last_name": env("DEFAULT_MANAGER_LAST_NAME"),
+        "address": env("DEFAULT_MANAGER_ADDRESS")
+    },
+    "METER_CATEGORY": {
+        "label": env("DEFAULT_METER_CATEGORY_LABEL"),
+        "fixed_charge": env.int("DEFAULT_METER_CATEGORY_FIXED_CHARGE"),
+        "percentage_charge": env.int("DEFAULT_METER_CATEGORY_PERCENTAGE_CHARGE")
     }
 }
