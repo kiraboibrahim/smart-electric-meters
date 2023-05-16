@@ -9,4 +9,4 @@ class MeterCategoryConfig(AppConfig):
     def ready(self):
         from .models import MeterCategory
 
-        MeterCategory.objects.get_or_create(**settings.DEFAULTS["METER_CATEGORY"])
+        """MeterCategory.objects.get_or_create(**settings.DEFAULTS["METER_CATEGORY"])"""

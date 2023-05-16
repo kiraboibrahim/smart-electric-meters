@@ -1,6 +1,6 @@
 import uuid
 
-from vendor_api.vendors.api_factory import MeterVendorAPIFactoryImpl
+from vendor_api.vendors.api_factory import factory
 
 
 class Manager:
@@ -75,7 +75,7 @@ class Meter:
 
     def _get_vendor_api(self):
         meter_vendor_name = self._meter.manufacturer_name
-        meter_vendor_api = MeterVendorAPIFactoryImpl.get(meter_vendor_name)
+        meter_vendor_api = factory.get_api(meter_vendor_name)
         return meter_vendor_api
 
 

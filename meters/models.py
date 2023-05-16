@@ -13,6 +13,7 @@ from meter_categories.utils import get_default_meter_category
 from users.account_types import MANAGER, DEFAULT_MANAGER
 
 User = get_user_model()
+
 RechargeToken = collections.namedtuple("RechargeToken",
                                        ["token_no", "num_of_units", "unit", "meter", "amount_paid", "charges"])
 
@@ -25,11 +26,11 @@ def get_default_meter_manager():
 class Meter(models.Model):
     meter_no = models.CharField("Meter number", max_length=11, unique=True)
     manufacturer = models.ForeignKey(MeterManufacturer, on_delete=models.PROTECT, related_name="meters")
-    manager = models.ForeignKey(User, on_delete=models.PROTECT,default=get_default_meter_manager(),
+    manager = models.ForeignKey(User, on_delete=models.PROTECT,
                                 limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER),
                                 null=True, blank=True, related_name="meters")
     category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters",
-                                 default=get_default_meter_category)
+                                 )
     is_active = models.BooleanField(default=True)
 
     @functools.cached_property

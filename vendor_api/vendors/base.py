@@ -19,5 +19,5 @@ class MeterVendorAPI(abc.ABC):
 class MeterVendorAPIFactory(abc.ABC):
 
     @abc.abstractmethod
-    def get(self, manufacturer_name: str):
+    def get_api(self, vendor_name: str):
         raise NotImplementedError

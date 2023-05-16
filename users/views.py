@@ -30,7 +30,7 @@ from recharge_tokens.models import RechargeToken
 from .account_types import ADMIN, MANAGER
 from .filters import UserSearchUrlQueryKwargMapping
 from .forms import ResetPasswordForm, EditUserProfileForm, EditUserForm, ChangePasswordForm, ManagerUnitPriceEditForm, \
-    CreateUserForm
+    CreateUserFormFactory
 from .mixins import UsersContextMixin
 from .models import UnitPrice
 from .utils import get_users
@@ -91,7 +91,7 @@ class UserListView(AdminOrSuperAdminRequiredMixin, ListView):
         return users
 
     def get_context_data(self, **kwargs):
-        add_user_form = CreateUserForm.get(self.request.user)
+        add_user_form = CreateUserFormFactory.get_form(self.request.user)
         context = super().get_context_data(**kwargs)
         context["add_user_form"] = add_user_form
         return context
@@ -132,7 +132,7 @@ class UserCreateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, UsersC
         return super(UserCreateView, self).post(*args, **kwargs)
 
     def get_form_class(self):
-        return CreateUserForm.get(self.request.user).__class__
+        return CreateUserFormFactory.get_form(self.request.user).__class__
 
     def get_success_message(self, cleaned_data):
         account_type = cleaned_data["account_type"]
@@ -219,6 +219,11 @@ class UserProfileEditView(LoginRequiredMixin, SuccessMessageMixin, ContextMixin,
 
     def post(self, request, *args, **kwargs):
         return self.update_user_personal_info(request.user)
+
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            self.template_name = "managers/users/profile.html.development"
+        return self.template_name
 
     def update_user_personal_info(self, user):
         edit_user_profile_form = EditUserProfileForm(self.request.POST, instance=user)
