@@ -11,8 +11,8 @@ class UserConfig(AppConfig):
         from .account_types import DEFAULT_MANAGER
         from .models import UnitPrice
 
-        User = get_user_model()
+        """User = get_user_model()
         default_manager, is_manager_created = User.objects.get_or_create(**settings.DEFAULTS["MANAGER"], account_type=DEFAULT_MANAGER)
         if is_manager_created:
             default_manager.set_unusable_password()
-            UnitPrice.objects.get_or_create(manager=default_manager)
+            UnitPrice.objects.get_or_create(manager=default_manager)"""
