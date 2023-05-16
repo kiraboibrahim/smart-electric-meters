@@ -59,14 +59,15 @@ class SuperAdminCreateUserForm(CreateUserBaseForm):
         fields = ["first_name", "last_name", "email", "phone_no", "address"]
 
 
-class CreateUserForm:
+class CreateUserFormFactory:
     @classmethod
-    def get(cls, user):
+    def get_form(cls, user):
+        form = None
         if user.is_super_admin():
-            return SuperAdminCreateUserForm()
+            form = SuperAdminCreateUserForm()
         elif user.is_admin():
-            return AdminCreateUserForm()
-        return None
+            form = AdminCreateUserForm()
+        return form
 
 
 class EditUserForm(ModelForm):

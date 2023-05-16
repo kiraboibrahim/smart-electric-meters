@@ -41,6 +41,11 @@ class PaymentSearchView(LoginRequiredMixin, SearchListView):
     search_url_query_kwarg_mapping_class = PaymentSearchUrlQueryKwargMapping
     model_fields_filter_class = PaymentTimeRangeFilter
 
+    def get_template_names(self):
+        if self.request.user.is_manager():
+            self.template_name = "managers/payments/list_payments.html.development"
+        return self.template_name
+
     def get_queryset(self):
         payments = super(PaymentSearchView, self).get_queryset()
         return get_user_payments(self.request.user, initial_payments=payments)
