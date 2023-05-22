@@ -56,6 +56,7 @@ LOCAL_APPS = [
     'payments.apps.PaymentConfig',
     'recharge_tokens.apps.RechargeTokensConfig',
     'vendor_api.apps.VendorApiConfig',
+    'shared',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -199,14 +200,20 @@ MAX_ITEMS_PER_PAGE = 2
 
 DEFAULTS = {
     "MANAGER": {
-        "phone_no": env("DEFAULT_MANAGER_PHONE_NO"),
-        "first_name": env("DEFAULT_MANAGER_FIRST_NAME"),
-        "last_name": env("DEFAULT_MANAGER_LAST_NAME"),
-        "address": env("DEFAULT_MANAGER_ADDRESS")
+        "lookup_field": "phone_no",
+        "lookup_value": env("DEFAULT_MANAGER_PHONE_NO"),
+        "defaults": {
+            "first_name": env("DEFAULT_MANAGER_FIRST_NAME"),
+            "last_name": env("DEFAULT_MANAGER_LAST_NAME"),
+            "address": env("DEFAULT_MANAGER_ADDRESS")
+        }
     },
-    "METER_CATEGORY": {
-        "label": env("DEFAULT_METER_CATEGORY_LABEL"),
-        "fixed_charge": env.int("DEFAULT_METER_CATEGORY_FIXED_CHARGE"),
-        "percentage_charge": env.int("DEFAULT_METER_CATEGORY_PERCENTAGE_CHARGE")
+    "CHARGES_CATEGORY": {
+        "lookup_field": "label",
+        "lookup_value": env("DEFAULT_CHARGES_CATEGORY_LABEL"),
+        "defaults": {
+            "fixed_charge": env.int("DEFAULT_CHARGES_CATEGORY_FIXED_CHARGE"),
+            "percentage_charge": env.int("DEFAULT_CHARGES_CATEGORY_PERCENTAGE_CHARGE")
+        }
     }
 }

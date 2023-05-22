@@ -11,8 +11,4 @@ class MeterCategoryConfig(AppConfig):
     def ready(self):
         from .models import MeterCategory
 
-        @ignore_table_does_not_exist_exception
-        def create_default_meter_category():
-            MeterCategory.objects.get_or_create(**settings.DEFAULTS["METER_CATEGORY"])
-
-        create_default_meter_category()
+        MeterCategory.objects.create_default_charges_category()

@@ -7,5 +7,5 @@ class AddMeterCategoryForm(forms.ModelForm):
 
     class Meta:
         model = meter_category_models.MeterCategory
-        fields = "__all__"
+        exclude = ("is_default",)
 

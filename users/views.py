@@ -283,7 +283,7 @@ class UserDeleteView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, Succes
         if not self.to_be_deleted_user.has_associated_meters():
             self.to_be_deleted_user.delete()
             success_message = self.get_success_message({"full_name": self.to_be_deleted_user.full_name})
-            messages.success(self.request,  success_message)
+            messages.success(self.request, success_message)
         else:
             messages.error(
                 self.request,
@@ -368,4 +368,3 @@ class LoginAsManagerView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Si
 
     def get_queryset(self):
         return User.objects.filter(account_type=MANAGER)
-

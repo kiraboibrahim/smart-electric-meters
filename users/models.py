@@ -1,11 +1,9 @@
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import Q
 
 from .account_types import DJANGO_SUPERUSER, SUPER_ADMIN, ADMIN, MANAGER, DEFAULT_MANAGER
 from .managers import UserManager
-from .validators import is_not_default_manager
 
 
 class User(AbstractUser):
@@ -22,8 +20,7 @@ class User(AbstractUser):
     last_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True, null=True, blank=True,
                               help_text="Email will be used for resetting your password")
-    phone_no = models.CharField(verbose_name="Phone number", max_length=10, unique=True,
-                                validators=[is_not_default_manager])
+    phone_no = models.CharField(verbose_name="Phone number", max_length=10, unique=True)
     address = models.CharField(max_length=255)
     account_type = models.PositiveIntegerField(choices=account_choices)
 
@@ -42,7 +39,7 @@ class User(AbstractUser):
         return self.account_type == MANAGER
 
     def is_default_manager(self):
-        return self.phone_no == settings.DEFAULTS["MANAGER"]["phone_no"]
+        return self.account_type == DEFAULT_MANAGER
 
     @property
     def price_per_unit(self):
