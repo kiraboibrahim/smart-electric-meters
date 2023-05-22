@@ -8,9 +8,9 @@ from django.db.models import Q
 
 import vendor_api.models
 from manufacturers.models import MeterManufacturer
-from meter_categories.models import MeterCategory
-from meter_categories.utils import get_default_meter_category
+from meter_categories.models import MeterCategory, get_default_meter_category
 from users.account_types import MANAGER, DEFAULT_MANAGER
+from shared.decorators import ignore_table_does_not_exist_exception
 
 User = get_user_model()
 
@@ -18,6 +18,7 @@ RechargeToken = collections.namedtuple("RechargeToken",
                                        ["token_no", "num_of_units", "unit", "meter", "amount_paid", "charges"])
 
 
+@ignore_table_does_not_exist_exception
 def get_default_meter_manager():
     default_meter_manager = User.objects.get(phone_no=settings.DEFAULTS["MANAGER"]["phone_no"])
     return default_meter_manager
@@ -29,7 +30,8 @@ class Meter(models.Model):
     manager = models.ForeignKey(User, on_delete=models.PROTECT, default=get_default_meter_manager,
                                 limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER),
                                 null=True, blank=True, related_name="meters")
-    category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters", default=get_default_meter_category)
+    category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters",
+                                 default=get_default_meter_category)
     is_active = models.BooleanField(default=True)
 
     @functools.cached_property
