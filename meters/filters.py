@@ -1,27 +1,28 @@
+from collections import OrderedDict
+
 import django_filters
-from search_views.filters import BaseFilter
+
+from core.fields import Select2Field
 
 from .models import Meter
 
 
-class AdminMeterListFilter(django_filters.FilterSet):
+class MeterFilter(django_filters.FilterSet):
+    meter_number = django_filters.CharFilter(field_name="meter_number", lookup_expr="contains")
 
     class Meta:
         model = Meter
-        fields = ['manufacturer', 'category', 'manager', 'is_active']
+        fields = ['meter_number', 'vendor', 'manager', 'is_active']
 
+    def get_form_class(self):
+        base_form_class = super().get_form_class()
 
-class ManagerMeterListFilter(django_filters.FilterSet):
+        class FormClass(base_form_class):
+            if self.request.user.is_manager():
+                manager = None
+        return FormClass
 
-    class Meta:
-        model = Meter
-        fields = ['manufacturer', 'is_active']
-
-
-class MeterSearchUrlQueryKwargMapping(BaseFilter):
-    search_fields = {
-        "query": {
-            "operator": "__icontains",
-            "fields": ["meter_no"]
-        }
-    }
+    @property
+    def qs(self):
+        meters = super().qs
+        return meters.for_user(self.request.user)

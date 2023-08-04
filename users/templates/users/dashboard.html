@@ -1,0 +1,78 @@
+{% extends "core/layouts/base.html" %}
+{% load static %}
+
+{% block title %} My Dashboard {% endblock title %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'users/css/dashboard.css' %}">
+{% endblock head %}
+
+{% block content %}
+    <div class="mt-4 p-3">
+        <div class="row">
+            <h2 class="welcome-blurb mb-4 mt-3">Hello, {{ user.first_name }}</h2>
+        </div>
+        <div class="row">
+            <div class="col-lg-3 col-sm-6 col-xs-1 mb-3">
+                <div class="card px-3">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <h4 class="card-title me-auto">
+                                <span class="material-symbols material-symbols-outlined text-success" style="font-size: 4rem;">group</span>
+                            </h4>
+                            <div class="card-text" style="color: #404E67;">
+                                <h3 class="fs-4 text-end">{{ user_count }}</h3>
+                                <h3 class="fs-6">Users</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-6 col-xs-1 mb-3">
+                <div class="card px-3">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <h4 class="card-title me-auto">
+                                <span class="material-symbols material-symbols-outlined text-success" style="font-size: 4rem;">electric_meter</span>
+                            </h4>
+                            <div class="card-text" style="color: #404E67;">
+                                <h3 class="fs-4 text-end">{{ meter_count }}</h3>
+                                <h3 class="fs-6">Meters</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-6 col-xs-1 mb-3">
+                <div class="card px-3">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <h4 class="card-title me-auto">
+                                <span class="material-symbols material-symbols-outlined text-success" style="font-size: 4rem;">business_center</span>
+                            </h4>
+                            <div class="card-text" style="color: #404E67;">
+                                <h3 class="fs-4 text-end">{{ vendor_count }}</h3>
+                                <h3 class="fs-6">Vendors</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-sm-6 col-xs-1 mb-3">
+                <div class="card px-3">
+                    <div class="card-body">
+                        <div class="d-flex">
+                            <h4 class="card-title me-auto">
+                                <span class="material-symbols material-symbols-outlined text-success" style="font-size: 4rem;">shopping_cart</span>
+                            </h4>
+                            <div class="card-text" style="color: #404E67;">
+                                <h3 class="fs-4 text-end">{{ order_count }}</h3>
+                                <h3 class="fs-6">Orders</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

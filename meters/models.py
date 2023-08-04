@@ -1,47 +1,67 @@
-import collections
-import functools
+import json
 
-from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models import Q
+from django.conf import settings
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from django.core.serializers import serialize
 
-import vendor_api.models
-from manufacturers.models import MeterManufacturer
-from meter_categories.models import MeterCategory
-from users.account_types import MANAGER, DEFAULT_MANAGER
+from vendor_api import register_meter
+from meter_vendors.models import MeterVendor
+from users.filters import MANAGERS
+from core.services.payment import request_payment
 
 User = get_user_model()
 
-RechargeToken = collections.namedtuple("RechargeToken",
-                                       ["token_no", "num_of_units", "unit", "meter", "amount_paid", "charges"])
+
+class MeterQuerySet(models.QuerySet):
+    def for_user(self, user):
+        if user.is_super_admin() or user.is_admin():
+            return self.all()
+        return self.filter(manager=user)
 
 
 class Meter(models.Model):
-    meter_no = models.CharField("Meter number", max_length=11, unique=True)
-    manufacturer = models.ForeignKey(MeterManufacturer, on_delete=models.PROTECT, related_name="meters")
+    meter_number = models.CharField(max_length=11, unique=True)
+    vendor = models.ForeignKey(MeterVendor, on_delete=models.PROTECT, related_name="meters")
     manager = models.ForeignKey(User, on_delete=models.PROTECT, default=User.objects.get_default_manager,
-                                limit_choices_to=Q(account_type=MANAGER) | Q(account_type=DEFAULT_MANAGER),
-                                null=True, blank=True, related_name="meters")
-    category = models.ForeignKey(MeterCategory, on_delete=models.PROTECT, null=True, blank=True, related_name="meters",
-                                 default=MeterCategory.objects.get_default_charges_category)
+                                limit_choices_to=MANAGERS, related_name="meters")
     is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    def recharge(self, gross_recharge_amount, price_per_unit):
-        service_charges = self.get_charges(gross_recharge_amount)
-        net_recharge_amount = gross_recharge_amount - service_charges
-        num_of_units = net_recharge_amount / price_per_unit
-        recharge_token = vendor_api.models.Meter(self).recharge(num_of_units)
-        recharge_token = RechargeToken(recharge_token.token_no, recharge_token.num_of_units, recharge_token.unit,
-                                       self, gross_recharge_amount, service_charges)
-        return recharge_token
+    objects = MeterQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["manager"]
+
+    @property
+    def vendor_name(self):
+        return self.vendor.name
+
+    @property
+    def manager_full_name(self):
+        if self.manager:
+            return self.manager.full_name
+
+    @property
+    def manager_unit_price(self):
+        return 1000  # TODO: Update and use manager unit price instead hard-wired value
+
+    @property
+    def manager_phone_no(self):
+        return self.manager.phone_no
+
+    def recharge(self, recharge_amount, applied_unit_price):
+        """ Get a recharge token for a meter"""
+        from recharge_tokens.models import RechargeTokenOrder as Order
+        order = Order.objects.place_order(recharge_amount, applied_unit_price, self)
+        payer_phone_no = self.manager_phone_no
+        external_payment_id = request_payment(order.payment_pk, order.payment_amount, payer_phone_no)
+        order.update_payment_external_id(external_payment_id)
+        return order
 
     def register(self):
-        return vendor_api.models.Meter(self).register()
-
-    def get_charges(self, gross_amount):
-        percentage_charge, fixed_charge = self.category.charges
-        return fixed_charge + percentage_charge*gross_amount
+        return register_meter(self)
 
     def deactivate(self):
         self.is_active = False
@@ -51,25 +71,32 @@ class Meter(models.Model):
         self.is_active = True
         self.save()
 
-    @property
-    def manufacturer_name(self):
-        return self.manufacturer.name
+    def get_due_fees(self):
+        days_in_a_month = 30
+        now = timezone.now()
+        last_paid_at = self.created_at  # Default the last paid date to the creation date of the meter
+        if hasattr(self, "metermonthlyfeepaymentlog"):  # Meter has an entry in the MeterMonthlyFeeLog
+            last_paid_at = self.metermonthlyfeepaymentlog.last_paid_at
+        months_due = (now - last_paid_at).days // days_in_a_month
+        return months_due * settings.LEGIT_SYSTEMS_METER_MONTHLY_FLAT_FEE
 
-    @property
-    def manager_full_name(self):
-        if self.manager:
-            return self.manager.full_name
+    def as_json(self):
+        return json.dumps(json.loads(serialize("json", [self])[1:-1])["fields"])
 
-    @property
-    def category_label(self):
-        return self.category.label
-
-    @property
-    def unit_price(self):
-        return self.manager.price_per_unit
+    def get_recharge_initial(self):
+        return json.dumps({
+            "meter_number": self.meter_number,
+            "applied_unit_price": self.manager_unit_price,
+            "due_fees": self.get_due_fees()
+        })
 
     def __str__(self):
-        return "%s %s" % (self.meter_no, self.manager_full_name)
+        return self.meter_number
 
-    class Meta:
-        ordering = ["manager"]
+
+class MeterMonthlyFeePaymentLog(models.Model):
+    meter = models.OneToOneField(Meter, on_delete=models.PROTECT)
+    last_paid_at = models.DateTimeField()
+
+    def __str__(self):
+        return self.meter

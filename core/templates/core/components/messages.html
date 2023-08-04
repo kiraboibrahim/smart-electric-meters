@@ -1,0 +1,18 @@
+<div class="toast-container position-fixed" style="top: 10px; right: 10px;">
+    {% for message in messages %}
+        <div class="toast align-items-center border-0 text-bg-{{ message.level_tag }}" role="alert" aria-live="assertive"
+             aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {{ message | safe }}
+                </div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+<script>
+    const delay = 6000; // milliseconds
+    let toast_elem_list = document.querySelectorAll('.toast');
+    toast_elem_list.forEach((toast_elem) => {new bootstrap.Toast(toast_elem, {delay}).show()});
+</script>

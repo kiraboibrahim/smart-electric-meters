@@ -1,0 +1,18 @@
+.personal-info,
+ .unit-price-info {
+    border-bottom: 1px solid #E6E6E6;
+}
+.personal-info__title,
+.password-info__title,
+ .unit-price-info__title {
+    font-size: 16px;
+    color: #4D4D4D;
+}
+
+.asteriskField {
+    display: none;
+}
+
+.input-group ~ .invalid-feedback {
+    display: block;
+}

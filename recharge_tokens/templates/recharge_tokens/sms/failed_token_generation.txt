@@ -1,0 +1,2 @@
+{% load humanize %}
+Dear {{ name }}, payment of UGX {{ amount|intcomma }} for meter {{ meter_no }} has been recieved by LEGIT SYSTEMS. Unfortunately, we were unable to process your order {{ order_id }}. Please contact us to resolve this.

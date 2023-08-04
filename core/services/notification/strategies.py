@@ -1,0 +1,2 @@
+BY_SMS = 1
+BY_EMAIL = 2

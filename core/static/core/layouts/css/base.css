@@ -1,0 +1,99 @@
+html, body {
+    font-family: 'Poppins', sans-serif;
+    width: 100vw;
+    height: 100vh;
+    font-size: 14px;
+}
+label {
+    color: #999999;
+    font-size: 13px;
+}
+.asteriskField {
+    color: red;
+    display: inline-block;
+    margin-left: 5px;
+}
+input:not(.btn), select {
+    color: #737373 !important;
+    font-size: 13px !important;
+}
+.input-group ~ .invalid-feedback {
+    display: block;
+}
+[readonly] {
+    pointer-events: none;
+}
+.settings__icon {
+    color: #999999;
+    font-size: 20px;
+}
+.site-header {
+    background-color: #E6E6E6;
+}
+.site-header__logo {
+    font-size: 1rem;
+    font-weight: bold;
+}
+.notification {
+    font-size: 13px;
+}
+.user {
+    background-color: #001226;
+}
+.user__name {
+    font-size: 13px;
+}
+.material-symbols-outlined, .material-symbols {
+    vertical-align: text-bottom !important;
+}
+.main-content {
+    height: 100%;
+    /* Only scroll the main content area and not the vertical navigation bar */
+    max-height: 100vh;
+    overflow-y: scroll;
+}
+.modal-header {
+    background-color: #0d6efd;
+    color: white;
+    padding: 5px 10px;
+}
+.modal-content {
+    border: none;
+}
+.close {
+    color: white;
+}
+.card {
+    box-shadow: 0 10px 40px 0 rgba(62,57,107,.07),0 2px 9px 0 rgba(62,57,107,.06);
+    border: none;
+}
+label, input {
+    font-size: 13px;
+}
+table {
+    min-width: 650px;
+    overflow-x: scroll;
+}
+td, th {
+    white-space: nowrap; /* Don't break cell contents */
+}
+a[data-bs-toggle] {
+    text-decoration: none;
+}
+::placeholder {
+    color: #cacec4 !important;
+}
+/* Style the phone number prefix widget */
+#div_id_phone_no label, #div_id_username label {
+    display: block;
+}
+#div_id_phone_no select, #div_id_username select {
+    display: inline-block;
+    width: 70px;
+    margin-right: 5px;
+}
+#div_id_phone_no input, #div_id_username input {
+    display: inline-block;
+    width: calc(100% - 75px);
+}
+

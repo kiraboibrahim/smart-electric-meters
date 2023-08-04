@@ -1,57 +1,40 @@
-from django.conf import settings
-from django.contrib.auth.mixins import LoginRequiredMixin
+from xml.dom.minidom import parseString
 
-from shared.forms import SearchForm as PaymentSearchForm
-from shared.views import SearchListView, FilterListView
-from .filters import PaymentSearchUrlQueryKwargMapping, PaymentTimeRangeFilter
-from .forms import PaymentFiltersForm
+from django.views import View
+from django.views.generic.base import TemplateResponseMixin
+from django.http import HttpResponse
+from django.template import loader
+
 from .models import Payment
-from .utils import get_user_payments
 
 
-class PaymentListView(LoginRequiredMixin, FilterListView):
-    model = Payment
-    template_name = "payments/list_payments.html.development"
-    context_object_name = "payments"
-    paginate_by = settings.MAX_ITEMS_PER_PAGE
-    model_list_filter_class = PaymentTimeRangeFilter
+class PaymentCallbackView(TemplateResponseMixin, View):
+    SUCCESSFUL_METHOD_NAME = "receivePayment"
+    FAILED_METHOD_NAME = "notifyFailedPayment"
 
-    def get_template_names(self):
-        if self.request.user.is_manager():
-            return "managers/payments/list_payments.html.development"
-        return self.template_name
+    content_type = "text/xml"
+    template_name = "payments/callback_response.xml"
 
-    def get_queryset(self):
-        payments = super().get_queryset()
-        payments = get_user_payments(self.request.user, initial_payments=payments)
-        return payments
+    def post(self, request, *args, **kwargs):
+        method_name, external_payment_id, failure_message = self.parse_request_body()
+        payment = Payment.objects.get(external_id=external_payment_id)
+        if method_name == self.SUCCESSFUL_METHOD_NAME:
+            payment.mark_as_successful()
+        else:
+            payment.mark_as_failed(reason=failure_message)
+        return self.render_to_response(context={})
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["payment_filters_form"] = PaymentFiltersForm(self.request.GET)
-        context["payment_search_form"] = PaymentSearchForm(self.request.GET)
-        return context
+    def parse_request_body(self):
+        callback_response = parseString(self.request.body.decode("utf-8"))
+        method_name = callback_response.getElementsByTagName("method")[0].firstChild.data
+        external_payment_id = callback_response.getElementsByTagName("transactionId")[0].firstChild.data
+        try:
+            failure_message = callback_response.getElementsByTagName("message")[0].firstChild.data
+        except IndexError:
+            failure_message = None
+        return method_name, external_payment_id, failure_message
 
+    def render_to_response(self, context, **response_kwargs):
+        content = loader.render_to_string(self.get_template_names()).encode("utf-8")
+        return HttpResponse(content=content, content_type=self.content_type)
 
-class PaymentSearchView(LoginRequiredMixin, SearchListView):
-    model = Payment
-    template_name = "payments/list_payments.html.development"
-    context_object_name = "payments"
-    paginate_by = settings.MAX_ITEMS_PER_PAGE
-    search_url_query_kwarg_mapping_class = PaymentSearchUrlQueryKwargMapping
-    model_fields_filter_class = PaymentTimeRangeFilter
-
-    def get_template_names(self):
-        if self.request.user.is_manager():
-            self.template_name = "managers/payments/list_payments.html.development"
-        return self.template_name
-
-    def get_queryset(self):
-        payments = super(PaymentSearchView, self).get_queryset()
-        return get_user_payments(self.request.user, initial_payments=payments)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["payment_filters_form"] = PaymentFiltersForm(self.request.GET)
-        context["payment_search_form"] = PaymentSearchForm(self.request.GET)
-        return context

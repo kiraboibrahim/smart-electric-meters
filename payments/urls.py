@@ -1,8 +1,8 @@
 from django.urls import path
 
-from payments.views import PaymentListView, PaymentSearchView
+import payments.views as payment_views
+
 
 urlpatterns = [
-    path("", PaymentListView.as_view(), name="list_payments"),
-    path("search", PaymentSearchView.as_view(), name="search_payments"),
+    path("receive-callback-POK8ioBRLlhYdw", payment_views.PaymentCallbackView.as_view(), name="callback_receive"),
 ]

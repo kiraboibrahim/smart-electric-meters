@@ -1,0 +1,81 @@
+{% load static %}
+{% load access_controls %}
+
+<nav class="col-2 d-flex flex-column" id="nav">
+    {% url "dashboard" as dashboard_url %}
+    {% url "user_list"  as user_list_url %}
+    {% url "meter_list" as meter_list_url %}
+    {% url "meter_vendor_list" as vendor_list_url %}
+    {% url "recharge_token_order_list" as order_list_url %}
+
+    <div class="row text-center">
+        <div class="col-12 py-3 pb-4 user">
+            <div class="profile text-end">
+                <a href="{% url 'profile' %}">
+                    <img src="{% static 'users/img/edit.png' %}" width="20" height="20" alt="Edit your profile">
+                </a>
+            </div>
+            <div class="user__avatar mb-2">
+                <img src="{% static 'core/layouts/img/user.png' %}" width="50" height="50" alt="Your profile picture">
+            </div>
+            <h2 class="user__name">{{ request.user.full_name }}</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <ul class="col-12 nav flex-column p-0">
+            <li class="nav-item mb-2 {% if dashboard_url == request.path_info %} nav-item--active {% endif %}">
+                <span class="material-symbols-outlined md-dark ps-2">dashboard</span><a
+                    href="{{ dashboard_url }}" class="nav-link">Dashboard</a>
+            </li>
+
+            {% onlyadmins %}
+            <li class="nav-item mb-2 {% if user_list_url == request.path_info %} nav-item--active {% endif %}">
+                <span class="material-symbols-outlined md-dark ps-2">group</span>
+                <a href="{{ user_list_url }}" class="nav-link">Users</a>
+            </li>
+            {% endonlyadmins %}
+            <li class="nav-divider"></li>
+
+            <li class="nav-item mb-2 {% if meter_list_url == request.path_info %} nav-item--active {% endif %}">
+                <span class="material-symbols-outlined md-dark ps-2">electric_meter</span>
+                <a href="{{ meter_list_url }}" class="nav-link">Meters</a>
+            </li>
+
+            {% onlyadmins %}
+            <li class="nav-item mb-2 {% if vendor_list_url == request.path_info %} nav-item--active {% endif %}">
+                <span class="material-symbols-outlined md-dark ps-2">business_center</span>
+                <a href="{{ vendor_list_url }}" class="nav-link">Vendors</a>
+            </li>
+            {% endonlyadmins %}
+
+            <li class="nav-divider"></li>
+
+            <li class="nav-item mb-2 {% if order_list_url == request.path_info %} nav-item--active {% endif %}">
+                <span class="material-symbols-outlined md-dark ps-2">shopping_cart</span>
+                <a href="{{ order_list_url }}" class="nav-link">Orders</a>
+            </li>
+        </ul>
+    </div>
+
+    <!--footer class="row mt-auto">
+        <small class="col-12"><a href="https://www.flaticon.com/free-icons/user" title="user icons">User icons
+            created by Flat Icons - Flaticon</a></small>
+    </footer-->
+</nav>
+<div class="nav-overlay"></div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let nav_opener = document.querySelector(".nav-opener");
+        let nav_closer = document.querySelector(".nav-overlay");
+        let nav = document.getElementById("nav");
+        nav_opener.addEventListener("click", function () {
+            nav.classList.add("nav-open");
+            nav_closer.style.display = "block";
+        });
+        nav_closer.addEventListener("click", function (event) {
+            nav.classList.remove("nav-open");
+            event.target.style.display = "none";
+        });
+    });
+</script>

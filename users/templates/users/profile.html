@@ -1,0 +1,69 @@
+{% extends 'core/layouts/base.html' %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    {{ password_change_form.media }}
+    <link rel="stylesheet" href="{% static 'users/css/profile.css' %}">
+{% endblock head %}
+
+{% block title %} My Profile {% endblock title %}
+
+{% block content %}
+    <div class="mt-5 px-1 pb-2">
+        <div class="row unit-price-info pb-3">
+            {% if request.user.is_manager %}
+                <h2 class="col-2 unit-price-info__title">Unit Price</h2>
+                <div class="col col-lg-7">
+                    <form method="post" action="{% url 'unit_price_update' %}">
+                        {% csrf_token %}
+                        {{ unit_price_update_form | crispy }}
+                        <div class="form-group text-end">
+                            <input class="btn btn-sm btn-primary px-4" type="submit" value="Save">
+                        </div>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+        <div class="row personal-info pt-3 pb-3 mb-3">
+            <h2 class="col-2 personal-info__title">Bio</h2>
+            <div class="col col-lg-7">
+                {% with pk=user.id %}
+                    <form method="post" action="{% url 'user_profile_update' %}">
+                        {% csrf_token %}
+                        <div class="form-group row">
+                            <div class="col-6">
+                                {{ my_profile_update_form.first_name | as_crispy_field }}
+                            </div>
+                            <div class="col-6">
+                                {{ my_profile_update_form.last_name | as_crispy_field }}
+                            </div>
+                        </div>
+
+                        {{ my_profile_update_form.email | as_crispy_field }}
+                        {{ my_profile_update_form.phone_no | as_crispy_field }}
+                        {{ my_profile_update_form.address | as_crispy_field }}
+
+                        <div class="form-group text-end">
+                            <input class="btn btn-sm btn-primary px-4" type="submit" value="Save">
+                        </div>
+                    </form>
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="row password-info">
+            <h2 class="col-3 col-md-2 password-info__title">Password</h2>
+            <div class="col col-lg-7">
+                <form method="POST" action="{% url 'password_update' %}">
+                    {% csrf_token %}
+                    {{ password_change_form | crispy }}
+                    <div class="form-group text-end">
+                        <input class="btn btn-sm btn-primary px-4" type="submit" value="Save">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

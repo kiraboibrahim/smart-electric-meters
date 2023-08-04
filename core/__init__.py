@@ -1,0 +1,1 @@
+COUNTRY_CHOICES = [("UG", "+256")]

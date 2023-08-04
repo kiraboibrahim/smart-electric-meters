@@ -1,6 +1,6 @@
 import uuid
 
-from vendor_api.vendors.api_factory import factory
+from vendor_api.vendors import factory as meter_vendor_api_factory
 
 
 class Manager:
@@ -8,15 +8,7 @@ class Manager:
         self._manager = manager
 
     @property
-    def first_name(self):
-        return self._manager.first_name
-
-    @property
-    def last_name(self):
-        return self._manager.last_name
-
-    @property
-    def full_name(self):
+    def name(self):
         return self._manager.full_name
 
     @property
@@ -35,27 +27,31 @@ class Manager:
     def phone_no(self):
         return self._manager.phone_no
 
+    def __str__(self):
+        return self.phone_no
+
 
 class Meter:
     def __init__(self, meter):
         self._meter = meter
         self._manager = Manager(meter.manager)
+        self._vendor_api = self._get_vendor_api()
 
     @property
     def meter_no(self):
-        return self._meter.meter_no
+        return self._meter.meter_number
 
     @property
-    def manager_last_name(self):
-        return self._manager.last_name
-
-    @property
-    def manager_full_name(self):
-        return self._manager.full_name
+    def manager_name(self):
+        return self._manager.name
 
     @property
     def manager_email(self):
         return self._manager.email
+
+    @property
+    def manager_address(self):
+        return self._manager.address
 
     @property
     def manager_id(self):
@@ -66,29 +62,14 @@ class Meter:
         return self._manager.phone_no
 
     def register(self):
-        meter_vendor_api = self._get_vendor_api()
-        return meter_vendor_api.register_meter(self)
+        return self._vendor_api.register_meter(self)
 
     def recharge(self, num_of_units):
-        meter_vendor_api = self._get_vendor_api()
-        return meter_vendor_api.recharge_meter(self, num_of_units)
+        return self._vendor_api.recharge_meter(self, num_of_units)
 
     def _get_vendor_api(self):
-        meter_vendor_name = self._meter.manufacturer_name
-        meter_vendor_api = factory.get_api(meter_vendor_name)
-        return meter_vendor_api
+        meter_vendor_name = self._meter.vendor_name
+        return meter_vendor_api_factory.get_api(meter_vendor_name)
 
-
-class RechargeToken:
-
-    def __init__(self, token_no, num_of_units, unit):
-        self.token_no = token_no
-        self.num_of_units = num_of_units
-        self.unit = unit
-
-
-class PriceCategory:
-    """
-    Implement this model and the respective payload
-    """
-    pass
+    def __str__(self):
+        return self.meter_no

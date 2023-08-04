@@ -1,0 +1,20 @@
+.login-card {
+    background-color: #FFFFFF;
+    width: 95%;
+    max-width: 350px;
+    max-height: 450px;
+}
+
+.login-card__title {
+    font-size: 1rem;
+    color: #4D4D4D;
+}
+.errorlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+}
+.asteriskField {
+    display: none;
+}

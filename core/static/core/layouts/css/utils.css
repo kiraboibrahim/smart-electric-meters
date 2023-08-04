@@ -1,0 +1,63 @@
+.h-secondary-btn {
+    background-color: #D9EBFF;
+    color: #73B6FF;
+}
+
+.h-bg-secondary {
+    background-color: #D9EBFF;
+    color: #73B6FF;
+}
+
+.h-secondary-text {
+    color: #73B6FF;
+}
+
+.h-floating-search-input,
+.h-floating-search-input:focus {
+    background-color: #ececec;
+    border: 1px solid #ececec;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    padding: 10px;
+    display: inline-block;
+}
+
+.h-floating-search-input::placeholder {
+    color: #999999;
+}
+
+.h-search-submit-btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.h-table-column-header {
+    color: #A6A6A6;
+    font-weight: normal;
+    font-size: 14px;
+}
+
+.h-table-title {
+    color: #404040;
+    font-size: 16px;
+}
+
+.h-bg-dark {
+    background-color: #4D4D4D;
+}
+.h-rounded-top-left {
+    border-top-left-radius: 5px;
+}
+
+.h-rounded-top-right {
+    border-top-right-radius: 5px;
+}
+
+.h-table-cell, .h-table-number-cell {
+    color: #737373 !important;
+    font-size: 13px;
+}
+
+.h-table-number-cell {
+    font-family: 'Roboto', sans-serif;
+}

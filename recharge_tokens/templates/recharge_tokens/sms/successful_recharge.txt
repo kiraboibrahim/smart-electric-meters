@@ -1,0 +1,2 @@
+{% load humanize %}
+Dear {{ name }}, payment of UGX {{ amount|intcomma }} for meter {{ meter_no }} has been recieved by LEGIT SYSTEMS. Token no is {{ token_no }}, Units {{ num_of_units }} KWh. Charges: UGX {{ applied_fees|intcomma }}. Transaction ID: {{ transaction_id }} Have a nice day.

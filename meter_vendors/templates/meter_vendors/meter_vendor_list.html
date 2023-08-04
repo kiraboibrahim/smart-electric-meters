@@ -1,0 +1,31 @@
+{% extends "core/layouts/base.html" %}
+
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %} Meter Vendors {% endblock title %}
+
+{% block head %}
+    <base href="{% url 'meter_vendor_list' %}">
+{% endblock head %}
+
+{% block content %}
+    {% include  "meter_vendors/modals/meter_vendor_create.html" %}
+    {% include "meter_vendors/modals/meter_vendor_update.html" %}
+    {% include "core/modals/delete.html" %}
+    <div class="container mt-3">
+        <div class="row mb-3 align-items-center">
+            <h2 class="col-3 h-table-title">VENDORS</h2>
+            <div class="col">
+                {% url 'meter_vendor_list' as filter_form_submit_url %}
+                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Vendor name" %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                {% include "meter_vendors/components/meter_vendor_list.html" %}
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -8,6 +8,10 @@ from django.db import DEFAULT_DB_ALIAS
 from django.forms import ValidationError
 from django.utils.functional import cached_property
 from django.utils.text import capfirst
+from django.conf import settings
+
+from phonenumber_field.phonenumber import PhoneNumber
+
 
 PASSWORD_FIELD = "password"
 
@@ -43,7 +47,7 @@ class Command(BaseCommand):
         if self.username_field.unique:
             return True
         return any(
-            len(unique_constraint.fields) == 1 and unique_constraint.fields[0] == self.username_field.name
+            len(unique_constraint.fields) == 1 and unique_constraint.fields[0] == self.username_field.full_name
             for unique_constraint in self.UserModel._meta.total_unique_constraints
         )
 
@@ -70,7 +74,6 @@ class Command(BaseCommand):
         except ValidationError as e:
             self.stderr.write("Error: %s" % "; ".join(e.messages))
             val = None
-
         return val
 
     def handle(self, *args, **options):
@@ -81,7 +84,8 @@ class Command(BaseCommand):
         username = None
         try:
             while username is None:
-                username = self.get_input_field_value(self.username_field)
+                username = PhoneNumber.from_string(self.get_input_field_value(self.username_field),
+                                                   region=settings.PHONENUMBER_DEFAULT_REGION)
                 error_msg = self.validate_username(username)
                 if error_msg:
                     self.stderr.write(error_msg)
@@ -135,7 +139,6 @@ class Command(BaseCommand):
                     continue
                 else:
                     user_data[PASSWORD_FIELD] = password
-
             self.UserModel._default_manager.db_manager(self.database).create_super_admin(**user_data)
             self.stdout.write("Super administrator created successfully")
 

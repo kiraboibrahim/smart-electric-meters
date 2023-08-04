@@ -1,0 +1,49 @@
+{% if users %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <td></td>
+                <td class="h-table-column-header">Name</td>
+                <td class="h-table-column-header">Contact</td>
+                <td class="h-table-column-header">Email</td>
+                <td class="h-table-column-header">Address</td>
+                <td></td>
+            </tr>
+            </thead>
+            <tbody>
+            {% for user in users %}
+                <tr>
+                    <td class="h-table-cell">
+                        {% if user.is_admin %}
+                            <span class="badge badge-pill text-bg-success">admin</span>
+                        {% endif %}
+                    </td>
+                    <td class="h-table-cell"> {{ user.full_name }}</td>
+                    <td class="h-table-number-cell">{{ user.phone_no }}</td>
+                    <td class="h-table-cell"> {% if user.email %}
+                        <a href="mailto:{{ user.email }}">{{ user.email }}</a> {% else %}
+                        <span class="text-muted">No email</span> {% endif %}</td>
+                    <td class="h-table-cell">{{ user.address }}</td>
+                    <td>
+                        {% url "user_update" pk=user.id as user_update_url %}
+                        <a href="#" data-href="{{ user_update_url }}" data-set-password-url="{{ user_update_url }}?scope=pwd" title="Edit User" class="me-4"
+                           data-bs-toggle="modal" data-bs-target="#user-update-modal" data-preinit="form"
+                           data-initial="{{ user.as_json }}">
+                            <span class="material-symbols-outlined">edit</span>
+                        </a>
+                        <a href="#" data-href="{% url 'user_delete' pk=user.id %}" title="Deactivate User"
+                           data-bs-toggle="modal" data-bs-target="#delete-modal">
+                            <span class="material-symbols-outlined text-danger">delete</span>
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <div class="d-flex justify-content-center mt-5">
+        <span class="text-muted fs-5">No users found</span>
+    </div>
+{% endif %}

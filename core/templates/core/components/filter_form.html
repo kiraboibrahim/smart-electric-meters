@@ -1,0 +1,75 @@
+{% load crispy_forms_tags %}
+
+<form method="get" action="{{ submit_url }}" id="filter-form" class="row">
+    <div class="col-8">
+        {% if search_field_name %}
+            {% for field in  filter.form %}
+                {% if field.html_name == search_field_name %}
+                    <div class="search-field">
+                        {{ field | as_crispy_field }}
+                        <button type="submit" class="btn btn-outline-secondary search-btn">
+                            <span class="material-symbols-outlined fs-4">search</span>
+                        </button>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="col d-flex align-items-center">
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-auto d-none" data-bs-toggle="modal"
+                data-bs-target="#filter-modal">
+            <span class="material-symbols-outlined">tune</span>
+        </button>
+    </div>
+
+    <div class="modal fade" id="filter-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fs-6">Filter</h5>
+                    <button type="button" class="close btn fs-5" data-bs-dismiss="modal">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    {% for field in filter.form %}
+                        {% if field.html_name != search_field_name %}
+                            {{ field | as_crispy_field }}
+                        {% endif %}
+                    {% endfor %}
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary me-3" onclick="clear_filters();">
+                            Clear
+                        </button>
+                        <button type="submit" class="btn btn-sm btn-primary">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+<script>
+    {# Basically, a filter form has one search input(text type input) and the rest of the field are select inputs(pre chosen values) #}
+    {# Search input is guaranteed to exist on page, because every page will have one #}
+    const filter_form = document.getElementById("filter-form");
+    const filter_modal = document.getElementById("filter-modal");
+    const search_field = document.querySelector(".search-field input");
+    const filter_modal_toggler = document.querySelector("[data-bs-target='#filter-modal']");
+
+    function clear_filters() {
+        filter_form.reset();
+        document.location.href = filter_form.getAttribute("action");
+    }
+
+    function init_filter_form() {
+        search_field.placeholder = "{{ search_field_placeholder }}";
+        {# Sometimes, the filter form can only have the search input, and in such cases it is better to hide the filter-modal toggler #}
+        {# But for our case, the toggler will start out hidden, and reveal it when we have any filter inputs rendered in the filter-modal #}
+        const any_filters_rendered = filter_modal.querySelector("input") || filter_modal.querySelector("select");
+        if (any_filters_rendered) {
+            filter_modal_toggler.classList.remove("d-none");
+        }
+    }
+    init_filter_form();
+</script>

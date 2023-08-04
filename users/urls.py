@@ -1,36 +1,27 @@
+from django.urls import path
 from django.contrib.auth import views as auth_views
-from django.urls import path, register_converter
 
-from shared.converters import HashIdConverter
-from users import views as user_views
+from . import views as user_views
+from .forms import AuthenticationForm
 
-register_converter(HashIdConverter, "hashid")
 
 urlpatterns = [
-    path("", user_views.UserListView.as_view(), name="list_users"),
-    path("login", auth_views.LoginView.as_view(template_name="users/login.html.development"), name="login"),
+    path("", user_views.UserListView.as_view(), name="user_list"),
+    path("login", auth_views.LoginView.as_view(template_name="users/login.html", form_class=AuthenticationForm, redirect_authenticated_user=True), name="login"),
     path("logout", auth_views.LogoutView.as_view(), name="logout"),
-    path("search", user_views.UserSearchView.as_view(), name="search_users"),
-    path("add", user_views.UserCreateView.as_view(), name="add_user"),
-    path("<hashid:pk>/edit", user_views.UserEditView.as_view(), name="edit_user"),
-    path("<hashid:pk>/delete", user_views.UserDeleteView.as_view(), name="delete_user"),
-    path("password-change",
-         auth_views.PasswordChangeView.as_view(template_name="users/change_password.html.development"),
-         name="password_change"),
-    path("password-change/done",
-         auth_views.PasswordChangeDoneView.as_view(template_name="users/change_password_done.html.development"),
-         name="password_change_done"),
-    path("forgot-password", user_views.ResetPassword.as_view(), name="forgot_password"),
+    path("create", user_views.UserCreateView.as_view(), name="user_create"),
+    path("<hashid:pk>/update", user_views.UserUpdateView.as_view(), name="user_update"),
+    path("<hashid:pk>/delete", user_views.UserDeleteView.as_view(), name="user_delete"),
+    path("forgot-password", user_views.PasswordResetView.as_view(), name="password_forgot"),
     path("reset-password-confirm/<uidb64>/<token>",
-         auth_views.PasswordResetConfirmView.as_view(template_name="users/reset_password_confirm.html.development"),
+         auth_views.PasswordResetConfirmView.as_view(template_name="users/password_reset_confirm.html"),
          name="password_reset_confirm"),
     path("reset-password-complete",
-         auth_views.PasswordResetCompleteView.as_view(template_name="users/reset_password_complete.html.development"),
+         auth_views.PasswordResetCompleteView.as_view(template_name="users/password_reset_complete.html"),
          name="password_reset_complete"),
-    path("password-update", user_views.ChangePasswordView.as_view(), name="password_update"),
-    path("dashboard", user_views.dashboard, name="dashboard"),
-    path("profile", user_views.profile, name="profile"),
-    path("profile/edit", user_views.UserProfileEditView.as_view(), name="edit_user_profile"),
-    path("prices/edit", user_views.UnitPriceEditView.as_view(), name="edit_unit_price"),
-    path("login-as-manager/<hashid:pk>", user_views.LoginAsManagerView.as_view(), name="login-as-manager"),
+    path("change-password", user_views.MyPasswordChangeView.as_view(), name="password_update"),
+    path("dashboard", user_views.MyDashboardView.as_view(), name="dashboard"),
+    path("profile", user_views.MyProfileView.as_view(), name="profile"),
+    path("profile/update", user_views.MyProfileUpdateView.as_view(), name="user_profile_update"),
+    path("prices/update", user_views.MyUnitPriceUpdateView.as_view(), name="unit_price_update"),
 ]

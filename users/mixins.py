@@ -1,27 +1,21 @@
-from shared.utils.paginator import paginate_queryset
+from django.contrib import messages
+from django.contrib.auth.mixins import AccessMixin
 
-from .utils import get_users
+
+class AdminOrSuperAdminRequiredMixin(AccessMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and (request.user.is_admin() or request.user.is_super_admin()):
+            return super().dispatch(request, *args, **kwargs)
+        messages.error(request, f"You don't have permission to access page: {request.path_info}")
+        return self.handle_no_permission()
 
 
-class UsersContextMixin(object):
-    """
-    Allow views that use the list_users template to access the  paginator, page_obj, users context variables
-    """
-    def get_page_number(self):
-        try:
-            page_number = int(self.request.GET.get("page", 1))
-        except ValueError:
-            page_number = 1
-        return page_number
+class ManagerRequiredMixin(AccessMixin):
 
-    def get_users_context(self):
-        context = {}
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and request.user.is_manager():
+            return super().dispatch(request, *args, **kwargs)
+        messages.error(request, f"You don't have permission to access page: <span class='fw-bold'>{request.path_info}</span>")
+        return self.handle_no_permission()
 
-        user = self.request.user
-        users = get_users(user)
-        paginator = paginate_queryset(users)
-        page_obj = paginator.get_page(self.get_page_number())
-        context["paginator"] = paginator
-        context["page_obj"] = page_obj
-        context["users"] = page_obj.object_list
-        return context
+

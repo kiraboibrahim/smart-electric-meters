@@ -1,0 +1,3 @@
+class FailedSMSDeliveryException(Exception):
+    pass
+

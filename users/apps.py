@@ -6,8 +6,6 @@ class UserConfig(AppConfig):
     name = 'users'
 
     def ready(self):
-        from . import signals
-
         User = get_user_model()
         User.objects.create_default_manager()
 

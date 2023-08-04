@@ -1,0 +1,31 @@
+{% extends "core/layouts/base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block head %}
+    <base href="{% url 'user_list' %}">
+    {{ set_password_form.media }}
+{% endblock head %}
+
+{% block title %} Users {% endblock title %}
+
+{% block content %}
+    {% include "core/modals/delete.html" %}
+    {% include "users/modals/user_create.html" %}
+    {% include "users/modals/user_update.html" %}
+
+    <div class="container mt-4 position-relative">
+        <div class="row mb-3 align-items-center">
+            <h2 class="col-3 me-auto h-table-title">USERS</h2>
+            <div class="col">
+                {% url 'user_list' as filter_form_submit_url %}
+                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Account name" %}
+            </div>
+        </div>
+        <div class="row">
+            {% include "users/components/user_list.html" %}
+        </div>
+        {% include "core/components/pagination.html" %}
+    </div>
+
+{% endblock content %}

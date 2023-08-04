@@ -1,0 +1,39 @@
+{% load crispy_forms_tags %}
+
+<div class="modal fade" id="meter-recharge-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Recharge meter</h5>
+                <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <div id="due-fees-alert" class="alert alert-danger" style="font-size: 13px;"></div>
+                    <form id="meter-recharge-form" method="post">
+                        {% csrf_token %}
+                        {{ meter_recharge_form | crispy }}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Recharge</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if meter_recharge_form.errors %}
+    <script>
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("meter-recharge-modal")).show();
+    </script>
+{% endif %}
+<script>
+    const meter_recharge_modal = document.getElementById("meter-recharge-modal");
+    meter_recharge_modal.addEventListener("show.bs.modal", function (event) {
+        const due_fess = JSON.parse(event.relatedTarget.getAttribute("data-initial"))["due_fees"];
+        document.querySelector("#due-fees-alert").textContent = `Charges: UGX ${due_fess}`;
+    });
+</script>

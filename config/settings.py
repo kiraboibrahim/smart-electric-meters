@@ -1,23 +1,29 @@
 import os
+import pathlib
 
 import environ
 from django.contrib import messages
+from phonenumber_field.phonenumber import PhoneNumber
 
 DEBUG = True
 
 env = environ.Env()
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = pathlib.Path(__file__).resolve().parent.parent
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent
 
 # Read django project settings
 if DEBUG is True:
-    environ.Env.read_env(os.path.join(PROJECT_DIR, "development.env"))
+    environ.Env.read_env(PROJECT_DIR / "development.env")
 else:
-    environ.Env.read_env(os.path.join(PROJECT_DIR, "production.env"))
+    environ.Env.read_env(PROJECT_DIR / "production.env")
 
-# Read Stron Power settings
-environ.Env.read_env(os.path.join(BASE_DIR, "vendor_api", "vendors", "stron_power", ".env"))
+# Read StonPower(Meter Vendor) settings
+environ.Env.read_env(BASE_DIR / "vendor_api" / "vendors" / "stron_power" / ".env")
+# Read PayLeo settings
+environ.Env.read_env(BASE_DIR / "core" / "services" / "payment" / "backends" / "payleo" / ".env")
+# Read TrueAfrican SMS settings
+environ.Env.read_env(BASE_DIR / "core" / "services" / "notification" / "backends" / "trueafrican" / ".env")
 
 SECRET_KEY = env("SECRET_KEY")
 
@@ -44,19 +50,20 @@ INSTALLED_APPS = [
 THIRD_PARTY_APPS = [
     'django_user_agents',
     'crispy_forms',
-    'crispy_bootstrap4',
-    'django_filters'
+    'crispy_bootstrap5',
+    'django_filters',
+    'phonenumber_field',
+    'rest_framework',
 ]
 
 LOCAL_APPS = [
-    'meters.apps.MeterConfig',
-    'users.apps.UserConfig',
-    'manufacturers.apps.MeterManufacturerConfig',
-    'meter_categories.apps.MeterCategoryConfig',
-    'payments.apps.PaymentConfig',
-    'recharge_tokens.apps.RechargeTokensConfig',
-    'vendor_api.apps.VendorApiConfig',
-    'shared',
+    'core',  # Should come first before any other local app
+    'meters',
+    'users',
+    'payments',
+    'vendor_api',
+    'meter_vendors',
+    'recharge_tokens',
 ]
 
 INSTALLED_APPS += THIRD_PARTY_APPS + LOCAL_APPS
@@ -74,11 +81,10 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': ["%s/templates" % BASE_DIR],
+        'DIRS': [],
         'APP_DIRS': True,
         'OPTIONS': {
             'string_if_invalid': 'Invalid Variable: %s',
@@ -114,15 +120,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Africa/Kampala'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+STATIC_ROOT = BASE_DIR / "static"
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    "%s/static/" % BASE_DIR,
-]
 
 AUTH_USER_MODEL = "users.User"
 LOGIN_URL = "/users/login"
@@ -131,14 +135,20 @@ LOGOUT_REDIRECT_URL = LOGIN_URL
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CRISPY_TEMPLATE_PACK = "bootstrap4"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        'rest_framework.permissions.IsAuthenticated'
+    ]
+}
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-           "format": "{levelname}: {asctime}: Module:{module} - {message}",
+            "format": "{levelname}: {asctime}: Module:{name} - {message}",
             "style": "{"
         }
     },
@@ -154,14 +164,14 @@ LOGGING = {
         "general_file": {
             "class": "logging.FileHandler",
             "level": "ERROR",
-            "filename": os.path.join(BASE_DIR, "errors.log"),
+            "filename": BASE_DIR / "errors.log",
             "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
         "vendor_api_file": {
             "class": "logging.FileHandler",
             "level": "ERROR",
-            "filename": os.path.join(BASE_DIR, "vendor_api", "errors.log"),
+            "filename": BASE_DIR / "vendor_api" / "errors.log",
             "filters": ["require_debug_false"],
             "formatter": "verbose"
         },
@@ -182,11 +192,6 @@ LOGGING = {
     }
 }
 
-TWILIO = {
-    "ACCOUNT_SID": env("TWILIO_ACCOUNT_SID"),
-    "AUTH_TOKEN": env("TWILIO_AUTH_TOKEN"),
-    "PHONE_NO": env("TWILIO_PHONE_NO")
-}
 
 HASHIDS_SALT = env("HASHIDS_SALT")
 
@@ -194,26 +199,32 @@ MESSAGE_TAGS = {
     messages.constants.ERROR: "danger",
 }
 
-# My Settings
+PHONENUMBER_DEFAULT_REGION = "UG"
 
-MAX_ITEMS_PER_PAGE = 2
+# LEGIT SYSTEMS SETTINGS - CUSTOM PROJECT SETTINGS
 
-DEFAULTS = {
+LEGIT_SYSTEMS_MAX_ITEMS_PER_PAGE = 20
+
+LEGIT_SYSTEMS_DEFAULT_MANAGER = {
     "MANAGER": {
         "lookup_field": "phone_no",
-        "lookup_value": env("DEFAULT_MANAGER_PHONE_NO"),
+        "lookup_value": PhoneNumber.from_string(env("LEGIT_SYSTEMS_DEFAULT_MANAGER_PHONE_NO")),
         "defaults": {
-            "first_name": env("DEFAULT_MANAGER_FIRST_NAME"),
-            "last_name": env("DEFAULT_MANAGER_LAST_NAME"),
-            "address": env("DEFAULT_MANAGER_ADDRESS")
-        }
-    },
-    "CHARGES_CATEGORY": {
-        "lookup_field": "label",
-        "lookup_value": env("DEFAULT_CHARGES_CATEGORY_LABEL"),
-        "defaults": {
-            "fixed_charge": env.int("DEFAULT_CHARGES_CATEGORY_FIXED_CHARGE"),
-            "percentage_charge": env.int("DEFAULT_CHARGES_CATEGORY_PERCENTAGE_CHARGE")
+            "first_name": env("LEGIT_SYSTEMS_DEFAULT_MANAGER_FIRST_NAME"),
+            "last_name": env("LEGIT_SYSTEMS_DEFAULT_MANAGER_LAST_NAME"),
+            "address": env("LEGIT_SYSTEMS_DEFAULT_MANAGER_ADDRESS")
         }
     }
+}
+LEGIT_SYSTEMS_DEFAULT_UNIT_PRICE = 1000  # UGX
+
+LEGIT_SYSTEMS_PAYMENT_BACKEND = "core.services.payment.backends.prepaid.PrepaidPaymentBackend"
+LEGIT_SYSTEMS_EMAIL_NOTIFICATION_BACKEND = "core.services.notification.backends.email.EmailNotificationBackend"
+LEGIT_SYSTEMS_SMS_NOTIFICATION_BACKEND = "core.services.notification.backends.trueafrican.TrueAfricanSMSBackend"
+
+LEGIT_SYSTEMS_METER_MONTHLY_FLAT_FEE = 1000  # UGX
+
+PROXIES = {
+    "http": f"http://{env('LEGIT_SYSTEMS_PROXY_USERNAME')}:{env('LEGIT_SYSTEMS_PROXY_PASSWORD')}@{env('LEGIT_SYSTEMS_PROXY_IP')}:{env('LEGIT_SYSTEMS_PROXY_PORT')}",
+    "https": f"http://{env('LEGIT_SYSTEMS_PROXY_USERNAME')}:{env('LEGIT_SYSTEMS_PROXY_PASSWORD')}@{env('LEGIT_SYSTEMS_PROXY_IP')}:{env('LEGIT_SYSTEMS_PROXY_PORT')}"
 }

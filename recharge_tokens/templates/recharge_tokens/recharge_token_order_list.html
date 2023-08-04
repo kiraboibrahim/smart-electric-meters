@@ -1,0 +1,26 @@
+{% extends 'core/layouts/base.html' %}
+
+{% load humanize %}
+{% load crispy_forms_tags %}
+{% load static %}
+
+{% block title %} My Orders {% endblock title %}
+
+{% block content %}
+    <div class="container mt-3">
+        <div class="row mb-2 align-items-center">
+            <h2 class="col-3 me-auto h-table-title">ORDERS</h2>
+            <div class="col">
+                {% url 'recharge_token_order_list' as filter_form_submit_url %}
+                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="order_id" search_field_placeholder="Order ID" %}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col">
+                {% include "recharge_tokens/components/recharge_token_order_list.html" %}
+            </div>
+        </div>
+    {% include "core/components/pagination.html" %}
+    </div>
+{% endblock content %}
