@@ -16,7 +16,7 @@ class PrepaidPaymentBackend(PaymentBackend):
         try:
             payment = Payment.objects.get(pk=payment_request.payment_id)
         except Payment.DoesNotExist:
-            logger.error("Payment doesn't exist in database")
-            raise FailedPaymentException
+            logger.error(f"Payment with ID: {payment_request.payment_id} doesn't exist in database")
+            raise FailedPaymentException("Payment not found")
         payment.mark_as_successful()
-
+        return payment_request.payment_id

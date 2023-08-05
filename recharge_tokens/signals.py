@@ -12,7 +12,8 @@ def send_successful_recharge_sms(order):
         "token_no": order.token_no,
         "meter_no": order.meter.meter_number,
         "num_of_units": order.num_of_units,
-        "applied_fees": order.applied_fees
+        "applied_fees": order.applied_fees,
+        "transaction_id": order.payment.external_id or order.payment.id
     }
     message = render_to_string("recharge_tokens/sms/successful_recharge.txt", context=context)
     order.manager.notify_by_sms(subject="Payment Received", message=message)
@@ -22,7 +23,7 @@ def send_failed_payment_sms(payment, meter):
     context = {
         "amount": payment.amount,
         "meter_no": meter.meter_number,
-        "transaction_id": payment.external_id
+        "transaction_id": payment.external_id or payment.id
     }
     message = render_to_string("recharge_tokens/sms/failed_payment.txt", context=context)
     meter.manager.notify_by_sms(subject="Payment Failed", message=message)
