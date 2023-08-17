@@ -12,8 +12,8 @@
 
 {% block content %}
     <div class="mt-5 px-1 pb-2">
+        {% if request.user.is_manager %}
         <div class="row unit-price-info pb-3">
-            {% if request.user.is_manager %}
                 <h2 class="col-2 unit-price-info__title">Unit Price</h2>
                 <div class="col col-lg-7">
                     <form method="post" action="{% url 'unit_price_update' %}">
@@ -24,8 +24,8 @@
                         </div>
                     </form>
                 </div>
-            {% endif %}
         </div>
+        {% endif %}
         <div class="row personal-info pt-3 pb-3 mb-3">
             <h2 class="col-2 personal-info__title">Bio</h2>
             <div class="col col-lg-7">

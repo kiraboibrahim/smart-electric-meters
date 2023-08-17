@@ -10,6 +10,7 @@ urlpatterns = [
     path("meters/", include("meters.urls")),
     path("users/", include("users.urls")),
     path("vendors/", include("meter_vendors.urls")),
+    path("payments/", include("payments.urls")),
     path("recharge-tokens/", include("recharge_tokens.urls"))
 ]
 

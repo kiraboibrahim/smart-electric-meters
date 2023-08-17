@@ -6,6 +6,7 @@
             <th class="h-table-column-header">Name</th>
             <th class="h-table-column-header">Contact</th>
             <th class="h-table-column-header">Address</th>
+            <th class="h-table-column-header">Meters</th>
             <th class="h-table-column-header">API Availability</th>
             <th></th>
         </tr>
@@ -16,15 +17,12 @@
                 <td class="h-table-cell">{{ meter_vendor.name }}</td>
                 <td class="h-table-cell">{{ meter_vendor.phone_no }}</td>
                 <td class="h-table-cell">{{ meter_vendor.address }}</td>
+                <td class="h-table-cell">{{ meter_vendor.meter_count }}</td>
                 <td class="table-cell">
                     {% if meter_vendor.is_api_available %}
-                        <div class="d-inline-block text-bg-success rounded-circle p-1">
-                            <span class="material-symbols-outlined fs-5">done</span>
-                        </div>
+                        {% include "core/components/success.html" %}
                     {% else %}
-                        <div class="d-inline-block text-bg-danger rounded-circle p-1">
-                            <span class="material-symbols-outlined fs-5">close</span>
-                        </div>
+                        {% include "core/components/failure.html" %}
                     {% endif %}
                 </td>
                 <td>

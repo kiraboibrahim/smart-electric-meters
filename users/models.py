@@ -104,14 +104,8 @@ class User(AbstractUser):
         send_notification([str(self.phone_no).lstrip("+")], subject, message, notification_strategy=BY_SMS)
 
     def as_json(self):
-        attrs = json.loads(serialize("json", [self])[1:-1])["fields"]  # Include sensitive information
-        new_attrs = {}
-        # Remove sensitive information
-        for attr in attrs:
-            if attr in self.SERIALIZABLE_FIELDS:
-                new_attrs[attr] = attrs[attr]
-        new_attrs["phone_no"] = self.phone_no.national_number  # Strip off the country code
-        return json.dumps(new_attrs)
+        from .serializers import UserSerializer
+        return json.dumps(UserSerializer(self).data)
 
     def __str__(self):
         return self.full_name
@@ -125,4 +119,4 @@ class UnitPrice(models.Model):
         return other / self.price
 
     def __str__(self):
-        return self.price
+        return f"{self.manager.full_name}"

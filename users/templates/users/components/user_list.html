@@ -23,8 +23,8 @@
                     <td class="h-table-number-cell">{{ user.phone_no }}</td>
                     <td class="h-table-cell"> {% if user.email %}
                         <a href="mailto:{{ user.email }}">{{ user.email }}</a> {% else %}
-                        <span class="text-muted">No email</span> {% endif %}</td>
-                    <td class="h-table-cell">{{ user.address }}</td>
+                        <span class="text-muted">-</span> {% endif %}</td>
+                    <td class="h-table-cell">{{ user.address|title }}</td>
                     <td>
                         {% url "user_update" pk=user.id as user_update_url %}
                         <a href="#" data-href="{{ user_update_url }}" data-set-password-url="{{ user_update_url }}?scope=pwd" title="Edit User" class="me-4"

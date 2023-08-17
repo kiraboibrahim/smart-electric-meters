@@ -8,7 +8,7 @@ class MeterVendorAPI(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def register_meter(self, meter) -> bool:
+    def register_meter(self, meter) -> None:
         raise NotImplementedError
 
 

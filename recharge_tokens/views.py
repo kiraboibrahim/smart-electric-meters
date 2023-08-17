@@ -1,7 +1,4 @@
 from django.conf import settings
-from django.views.generic import View
-from django.views.generic.edit import SingleObjectMixin
-from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 from django_filters.views import FilterView
@@ -17,17 +14,3 @@ class RechargeTokenOrderListView(LoginRequiredMixin, FilterView):
     context_object_name = "recharge_token_orders"
     filterset_class = RechargeTokenOrderFilter
 
-
-class RetryOrder(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMixin, View):
-    model = RechargeTokenOrder
-    success_message = "Order has been retried"
-
-    def get(self, request, *args, **kwargs):
-        pass
-
-
-class CancelOrder(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMixin, View):
-    model = RechargeTokenOrder
-
-    def get(self, request, *args, **kwargs):
-        pass

@@ -56,6 +56,8 @@ class UserManager(BaseUserManager):
         default_manager, is_created = self.get_or_create(**filters, defaults=defaults)
         if is_created:
             default_manager.set_unusable_password()
+            from .models import UnitPrice
+            UnitPrice.objects.create(manager=default_manager, price=settings.LEGIT_SYSTEMS_DEFAULT_UNIT_PRICE)
         return default_manager
 
     @method_decorator(ignore_table_does_not_exist_exception)

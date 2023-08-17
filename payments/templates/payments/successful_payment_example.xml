@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<request>
+    <method>receivePayment</method>
+    <msisdn>256772123456</msisdn>
+    <transactionId>139932929199191</transactionId>
+    <referenceId>32432432423423222</referenceId>
+    <amount>500</amount>
+    <client_transaction>39293292142323</client_transaction>
+</request>

@@ -2,7 +2,7 @@ import abc
 
 
 class PaymentRequest:
-    def __init__(self, payment_id, payer_msisdn, amount):
+    def __init__(self, payment_id, amount, payer_msisdn):
         self.payer_msisdn = payer_msisdn
         self.amount = amount
         self.payment_id = payment_id

@@ -51,20 +51,12 @@ class MeterCreateView(LoginRequiredMixin, AdminOrSuperAdminRequiredMixin, Succes
         )
 
     def form_valid(self, form):
-        skip_vendor_registration = form.cleaned_data.pop("skip_vendor_registration")
-        meter = Meter(**form.cleaned_data)
         try:
-            if not skip_vendor_registration:
-                meter.register()
-        except MeterVendorAPINotFoundException:
-            messages.error(self.request, "Vendor API isn't available")
-            return super().form_invalid(form)
-        except MeterRegistrationException:
-            logger.exception("Meter registration failed")
+            return super().form_valid(form)
+        except (MeterVendorAPINotFoundException, MeterRegistrationException) as exc:
+            logger.exception("Registration with meter vendor has failed", exc_info=exc)
             messages.error(self.request, "Registration with meter vendor has failed")
-            return super().form_invalid(form)
-
-        return super().form_valid(form)
+        return redirect(self.success_url)
 
     def form_invalid(self, form):
         return super().render_to_response(self.get_context_data(meter_create_form=form))
@@ -75,10 +67,16 @@ class MeterUpdateView(AdminOrSuperAdminRequiredMixin, SuccessMessageMixin, Updat
     model = Meter
     form_class = MeterUpdateForm
     template_name = "meters/meter_list.html"
-    success_message = "Changes saved"
+    success_url = reverse_lazy("meter_list")
+    success_message = "Changes have been saved"
 
-    def get_success_url(self):
-        return reverse_lazy("meter_list")
+    def form_valid(self, form):
+        try:
+            return super().form_valid(form)
+        except (MeterVendorAPINotFoundException, MeterRegistrationException) as exc:
+            logger.exception("Registration with meter vendor has failed", exc_info=exc)
+            messages.error(self.request, "Registration with meter vendor has failed")
+        return redirect(self.success_url)
 
 
 @provide_meter_list_template_context
@@ -142,3 +140,21 @@ class MeterActivateView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, Succe
         meter.activate()
         messages.success(request, self.get_success_message(cleaned_data={"meter_number": meter.meter_number}))
         return redirect(self.success_url)
+
+
+class RegisterMeterWithVendorView(AdminOrSuperAdminRequiredMixin, SingleObjectMixin, SuccessMessageMixin, View):
+    model = Meter
+    success_message = "Meter has been registered"
+    http_method_names = ["get"]
+
+    def get(self, request, *args, **kwargs):
+        self.object = meter = self.get_object()
+        try:
+            meter.register()
+        except MeterRegistrationException as exc:
+            logger.exception("Registration with meter vendor has failed", exc_info=exc)
+            messages.error(request, "Registration with meter vendor has failed")
+        else:
+            messages.success(request, self.get_success_message(cleaned_data={}))
+        return redirect("meter_list")
+

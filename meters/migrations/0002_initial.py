@@ -3,7 +3,6 @@
 from django.conf import settings
 from django.db import migrations, models
 import django.db.models.deletion
-import users.managers
 
 
 class Migration(migrations.Migration):

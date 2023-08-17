@@ -188,8 +188,8 @@ class MyPasswordChangeView(LoginRequiredMixin, SuccessMessageMixin, FormView):
 
 class UserDeleteView(AdminOrSuperAdminRequiredMixin, UserPassesTestMixin, SuccessMessageMixin, View):
     to_be_deleted_user = None
-    error_message = "User: %(full_name)s can't be deleted. There are still meters associated to this users"
-    success_message = "User: %(full_name)s has been deleted"
+    error_message = "%(full_name)s can't be deleted. There are still meters associated to this user"
+    success_message = "%(full_name)s has been deleted"
 
     def test_func(self):
         self.to_be_deleted_user = get_object_or_404(User, pk=self.kwargs.get("pk"))

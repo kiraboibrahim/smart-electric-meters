@@ -9,4 +9,6 @@ urlpatterns = [
     path("<hashid:pk>/recharge", meter_views.MeterRechargeView.as_view(), name="meter_recharge"),
     path("<hashid:pk>/deactivate", meter_views.MeterDeactivateView.as_view(), name="meter_deactivate"),
     path("<hashid:pk>/activate", meter_views.MeterActivateView.as_view(), name="meter_activate"),
+    path("<hashid:pk>/register-with-vendor", meter_views.RegisterMeterWithVendorView.as_view(),
+         name="register_meter_with_vendor"),
 ]

@@ -15,6 +15,10 @@ class MeterVendor(models.Model):
     class Meta:
         ordering = ("name", )
 
+    @property
+    def meter_count(self):
+        return self.meters.all().count()
+
     def has_meters(self):
         return self.meters.exists()
 

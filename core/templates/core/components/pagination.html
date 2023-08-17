@@ -1,3 +1,4 @@
+{% if page_obj.paginator.num_pages > 1 %}
 <div class="d-flex align-items-center justify-content-center">
   <ul class="pagination mt-3">
   {% if page_obj.has_previous %}
@@ -44,3 +45,4 @@
 {% endif %}
 </ul>
 </div>
+{% endif %}
