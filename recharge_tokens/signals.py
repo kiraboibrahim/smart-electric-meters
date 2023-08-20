@@ -1,8 +1,12 @@
+import logging
 from django.dispatch import receiver
 from django.template.loader import render_to_string
 
+from core.services.notification.backends.exceptions import FailedSMSDeliveryException
 from payments.models import Payment
 from payments.signals import payment_successful, payment_failed
+
+logger = logging.getLogger(__name__)
 
 
 def send_successful_recharge_sms(order):
@@ -16,7 +20,11 @@ def send_successful_recharge_sms(order):
         "transaction_id": order.transaction_id
     }
     message = render_to_string("recharge_tokens/sms/successful_recharge.txt", context=context)
-    order.notify_customer(subject="Payment Received", message=message)
+    try:
+        order.notify_customer(subject="Payment Received", message=message)
+    except FailedSMSDeliveryException as exc:
+        logger.exception("Failed to deliver message", exc_info=exc)
+        pass
 
 
 def send_failed_payment_sms(order):
@@ -26,7 +34,11 @@ def send_failed_payment_sms(order):
         "transaction_id": order.transaction_id
     }
     message = render_to_string("recharge_tokens/sms/failed_payment.txt", context=context)
-    order.notify_customer(subject="Payment Failed", message=message)
+    try:
+        order.notify_customer(subject="Payment Failed", message=message)
+    except FailedSMSDeliveryException as exc:
+        logger.exception("Failed to deliver message", exc_info=exc)
+        pass
 
 
 def send_failed_token_generation_sms(order):
@@ -37,7 +49,11 @@ def send_failed_token_generation_sms(order):
         "order_id": order.id
     }
     message = render_to_string("recharge_tokens/sms/failed_token_generation.txt", context=context)
-    order.notify_customer(subject="Payment Received", message=message)
+    try:
+        order.notify_customer(subject="Payment Received", message=message)
+    except FailedSMSDeliveryException as exc:
+        logger.exception("Failed to deliver message", exc_info=exc)
+        pass
 
 
 @receiver(payment_successful, sender=Payment)
