@@ -42,7 +42,7 @@ class Payment(models.Model):
         return self.status is self.PAYMENT_SUCCESSFUL
 
     def mark_as_failed(self, reason="Unknown"):
-        if self.is_pending():
+        if not self.is_pending():
             return
         self.status = self.PAYMENT_FAILED
         self.failure_reason = reason

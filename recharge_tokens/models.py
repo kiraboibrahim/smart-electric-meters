@@ -69,21 +69,17 @@ class RechargeTokenOrder(models.Model):
 
     @property
     def transaction_id(self):
-        return self.external_payment_id or self.internal_payment_id
-
-    @property
-    def internal_payment_id(self):
         return self.payment.id
 
     @property
-    def external_payment_id(self):
+    def external_transaction_id(self):
         """ The ID returned by the Payment Service Provider. This can be used to resolve problems between the client
         and the Payment Service Provider."""
         return self.payment.external_id
 
     def pay(self, payer_phone_no=None):
         payer_phone_no = self.customer.phone_no if payer_phone_no is None else payer_phone_no
-        external_payment_id = request_payment(self.internal_payment_id, self.payment_amount, payer_phone_no)
+        external_payment_id = request_payment(self.transaction_id, self.payment_amount, payer_phone_no)
         self.set_external_payment_id(external_payment_id)
 
     def deliver(self):

@@ -86,16 +86,20 @@ a[data-bs-toggle] {
 ::placeholder {
     color: #cacec4 !important;
 }
-/* Style the phone number prefix widget */
-#div_id_phone_no label, #div_id_username label {
-    display: block;
+/* Style the PhoneNumberPrefix Widget, Fields can have different ID's depending on the form but they are
+* all phone number fields
+*/
+#div_id_phone_no label, #div_id_username label, #div_id_pay_with label {
+    display: block; /* Let labels of phone be above the inputs */
 }
-#div_id_phone_no select, #div_id_username select {
+/* Style the select input for country choices */
+#div_id_phone_no select, #div_id_username select, #div_id_pay_with select {
     display: inline-block;
     width: 70px;
     margin-right: 5px;
 }
-#div_id_phone_no input, #div_id_username input {
+/* Style the local phone number input */
+#div_id_phone_no input, #div_id_username input, #div_id_pay_with input {
     display: inline-block;
     width: calc(100% - 75px);
 }

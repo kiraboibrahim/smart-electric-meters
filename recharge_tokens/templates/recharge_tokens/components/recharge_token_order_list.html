@@ -6,6 +6,8 @@
         <thead>
         <tr>
             <th class="h-table-column-header">Order ID</th>
+            <th class="h-table-column-header">TXN ID</th>
+            <th class="h-table-column-header">External TXN ID</th>
             <th class="h-table-column-header">Status</th>
             <th class="h-table-column-header">Placed on</th>
             <th class="h-table-column-header">Amount</th>
@@ -20,15 +22,21 @@
         {% for order in recharge_token_orders %}
             <tr>
                 <td class="h-table-cell h-table-number-cell">{{ order.id }}</td>
+                <td class="h-table-cell h-table-number-cell">{{ order.transaction_id }}</td>
+                <td class="h-table-cell h-table-number-cell">{{ order.external_transaction_id }}</td>
                 <td class="h-table-cell">
-                    <span class="badge bg-primary">{{ order.get_status_label }}</span>
+                    {% if order.payment.is_failed %}
+                        <span class="badge bg-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{ order.payment.failure_reason }}">{{ order.get_status_label }}</span>
+                    {% else %}
+                        <span class="badge bg-primary">{{ order.get_status_label }}</span>
+                    {% endif %}
                 </td>
                 <td class="h-table-cell h-table-number-cell">{{ order.placed_at | date:"D d M, Y" }}</td>
                 <td class="h-table-cell h-table-number-cell">UGX {{ order.recharge_amount | intcomma }}</td>
                 <td class="h-table-cell h-table-number-cell fw-bold">UGX {{ order.applied_fees | intcomma }}</td>
                 <td class="h-table-cell h-table-number-cell">UGX {{ order.payment_amount | intcomma }}</td>
                 <td class="h-table-cell h-table-number-cell">{{ order.meter_no }}</td>
-                <td class="h-table-cell h-table-number-cell fw-bold">{{ order.token_no }}</td>
+                <td class="h-table-cell h-table-number-cell fw-bold">{{ order.token_no|default_if_none:"-" }}</td>
                 <td class="h-table-cell h-table-number-cell fw-bold">{{ order.num_of_units }}</td>
             </tr>
         {% endfor %}
@@ -37,6 +45,6 @@
 </div>
 {% else %}
     <div class="d-flex justify-content-center mt-5">
-        <span class="text-muted fs-5">No orders found</span>
+        <span class="text-muted fs-6">No orders found</span>
     </div>
 {% endif %}

@@ -1,2 +1,2 @@
 {% load humanize %}
-Payment of {{ amount|intcomma }} for meter {{ meter_no }} has failed. Transaction ID: {{ transaction_id }}
+Payment of UGX {{ amount|intcomma }} for meter {{ meter_no }} has failed. Transaction ID: {{ transaction_id }}

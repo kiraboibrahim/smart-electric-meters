@@ -12,7 +12,6 @@ from core import COUNTRY_CHOICES
 
 from .account_types import ADMIN, MANAGER
 from .models import UnitPrice
-from .filters import UserFilter
 
 User = get_user_model()
 

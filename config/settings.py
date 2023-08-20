@@ -125,7 +125,7 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = env.str("STATIC_ROOT", BASE_DIR / "static")
 STATIC_URL = '/static/'
 
 AUTH_USER_MODEL = "users.User"
@@ -218,7 +218,7 @@ LEGIT_SYSTEMS_DEFAULT_MANAGER = {
 }
 LEGIT_SYSTEMS_DEFAULT_UNIT_PRICE = 1000  # UGX
 
-LEGIT_SYSTEMS_PAYMENT_BACKEND = "core.services.payment.backends.prepaid.PrepaidPaymentBackend"
+LEGIT_SYSTEMS_PAYMENT_BACKEND = "core.services.payment.backends.payleo.PayLeoPaymentBackend"
 LEGIT_SYSTEMS_EMAIL_NOTIFICATION_BACKEND = "core.services.notification.backends.email.EmailNotificationBackend"
 LEGIT_SYSTEMS_SMS_NOTIFICATION_BACKEND = "core.services.notification.backends.trueafrican.TrueAfricanSMSBackend"
 

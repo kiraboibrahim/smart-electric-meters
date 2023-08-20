@@ -3,6 +3,10 @@ from functools import cached_property
 from django import forms
 from django.contrib.auth import get_user_model
 
+from phonenumber_field.widgets import PhoneNumberPrefixWidget
+from phonenumber_field.formfields import PhoneNumberField
+
+import core
 from .models import Meter
 
 
@@ -15,6 +19,10 @@ class MeterCreateForm(forms.ModelForm):
     class Meta:
         model = Meter
         exclude = ("is_active", "is_registered_with_vendor", "created_at", "previous_vendor_registrations")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vendor"].empty_label = "Select a vendor"
 
     def save(self, commit=True):
         skip_vendor_registration = self.cleaned_data.pop("skip_vendor_registration")
@@ -33,6 +41,7 @@ class MeterUpdateForm(forms.ModelForm):
 
 class MeterRechargeForm(forms.Form):
     meter_number = forms.CharField(max_length=11)
+    pay_with = PhoneNumberField(widget=PhoneNumberPrefixWidget(country_choices=core.COUNTRY_CHOICES))
     recharge_amount = forms.IntegerField(widget=forms.TextInput(attrs={"type": "number", "placeholder": "UGX"}))
     applied_unit_price = forms.IntegerField(widget=forms.TextInput(attrs={"type": "number"}))
 
@@ -63,5 +72,6 @@ class MeterRechargeForm(forms.Form):
         applied_unit_price = self.meter.manager_unit_price if self.user.is_manager() else \
             self.cleaned_data["applied_unit_price"]
         recharge_amount = self.cleaned_data["recharge_amount"]
-        return self.meter.recharge(recharge_amount, applied_unit_price=applied_unit_price)
+        payment_phone_no = self.cleaned_data["pay_with"]
+        return self.meter.recharge(recharge_amount, applied_unit_price=applied_unit_price, payment_phone_no=payment_phone_no)
 

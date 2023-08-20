@@ -33,7 +33,7 @@ class PaymentCallbackView(TemplateResponseMixin, View):
         return self.render_to_response(context={})
 
     def parse_request_body(self):
-        callback_response = parseString(self.request.body.decode("utf-8"))
+        callback_response = parseString(self.request.body.decode("utf-8").lstrip("\n").rstrip("\n"))
         method_name = callback_response.getElementsByTagName("method")[0].firstChild.data
         external_payment_id = callback_response.getElementsByTagName("transactionId")[0].firstChild.data
         try:

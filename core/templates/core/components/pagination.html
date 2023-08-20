@@ -45,4 +45,18 @@
 {% endif %}
 </ul>
 </div>
+<script>
+    /* Append other search params to page links so that pagination works on results filtered by search params */
+    const curr_doc_location = new URL(document.location.href);
+    const search_params_string = curr_doc_location.search.slice(1);
+    search_params = new URLSearchParams(search_params_string);
+    search_params.delete("page"); // Don't duplicate page param
+    const new_search_params_string = search_params.toString();
+    if(new_search_params_string) {
+        Array.from(document.querySelectorAll(".page-link")).forEach(function(page_link) {
+            page_link.href = `${page_link.href}&${new_search_params_string}`
+        });
+    }
+
+</script>
 {% endif %}

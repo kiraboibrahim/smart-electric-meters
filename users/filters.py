@@ -27,9 +27,11 @@ class UserFilter(django_filters.FilterSet):
     def get_form_class(self):
         base_form_class = super().get_form_class()
         admin_choices = (
+            ("", "No account type selected"),
             (MANAGER, "Manager"),
         )
         super_admin_choices = (
+            ("", "No account type selected"),
             (ADMIN, "Admin"),
             (MANAGER, "Manager"),
         )

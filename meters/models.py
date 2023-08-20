@@ -76,11 +76,12 @@ class Meter(ModelDiffMixin, models.Model):
     def is_registered_with_vendor(self):
         return self.previous_vendor_registrations.all().filter(pk=self.vendor.id).exists()
 
-    def recharge(self, recharge_amount, applied_unit_price):
+    def recharge(self, recharge_amount, applied_unit_price=None, payment_phone_no=None):
         """ Get a recharge token for a meter"""
         from recharge_tokens.models import RechargeTokenOrder as Order
+        applied_unit_price = self.manager_unit_price if applied_unit_price is None else applied_unit_price
         order = Order.objects.place_order(recharge_amount, applied_unit_price, self)
-        order.pay(payer_phone_no=self.manager_phone_no)
+        order.pay(payer_phone_no=payment_phone_no)
         return order
 
     def activate(self):
@@ -119,7 +120,7 @@ class Meter(ModelDiffMixin, models.Model):
         self.previous_vendor_registrations.add(*vendors)
 
     def get_recharge_info(self):
-        return json.dumps({"due_fees": self.due_fees, "meter_number": self.meter_number, "applied_unit_price": self.manager_unit_price})
+        return json.dumps({"due_fees": self.due_fees, "meter_number": self.meter_number, "applied_unit_price": self.manager_unit_price, "pay_with": self.manager_phone_no.national_number})
 
     def as_json(self):
         from .serializers import MeterSerializer

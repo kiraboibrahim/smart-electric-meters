@@ -44,8 +44,7 @@ def send_failed_token_generation_sms(order):
 def get_recharge_token(sender, payment, associated_order, **kwargs):
     associated_order.deliver()
     if associated_order.is_delivered():
-        pass
-        # send_successful_recharge_sms(associated_order)
+        send_successful_recharge_sms(associated_order)
     else:
         # The payment was successful, but somehow, the token wasn't received from the vendor API
         send_failed_token_generation_sms(associated_order)

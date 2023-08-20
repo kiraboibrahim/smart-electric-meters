@@ -25,10 +25,11 @@ class TrueAfricanSMSBackend(NotificationBackend):
             "password": self.PASSWORD
         }
         try:
-            response = requests.post(self.SMS_SEND_URL, json=payload, proxies=django_settings.PROXIES).json()
+            proxies = django_settings.PROXIES if django_settings.DEBUG is True else {}
+            response = requests.post(self.SMS_SEND_URL, json=payload, proxies=proxies).json()
             if response["code"] != self.SUCCESSFUL_SMS_DELIVERY_CODE:
-                logger.error(response["message"])
-                raise FailedSMSDeliveryException(response["message"])
+                logger.error(f"{response['message']}")
+                raise FailedSMSDeliveryException(f"{response['message']}")
         except Exception as e:
             logger.exception(str(e))
-            raise FailedSMSDeliveryException
+            raise FailedSMSDeliveryException(str(e))
