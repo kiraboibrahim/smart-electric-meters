@@ -25,7 +25,7 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     external_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
-    failure_reason = models.CharField(max_length=512, null=True, blank=True)
+    failure_reason = models.TextField(null=True, blank=True)
 
     objects = PaymentManager()
 
