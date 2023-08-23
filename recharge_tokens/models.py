@@ -5,7 +5,6 @@ import meters.models
 from vendor_api import recharge_meter
 from payments.models import Payment
 from core.services.payment import request_payment
-from core.services.notification.strategies import BY_SMS
 
 User = get_user_model()
 
@@ -15,15 +14,19 @@ class RechargeTokenOrderQueryset(models.QuerySet):
     def for_user(self, user):
         if user.is_super_admin() or user.is_admin():
             return self.all()
-        return self.filter(meter__manager=user)
+        elif user.is_manager():
+            return self.filter(meter__manager=user)
+        return self.none()
 
 
 class RechargeTokenOrderManager(models.Manager):
 
-    def place_order(self, recharge_amount, applied_unit_price, meter):
+    def place_order(self, recharge_amount, meter, applied_unit_price=None, payer_phone_no=None):
+        payer_phone_no = meter.manager_phone_no if payer_phone_no is None else payer_phone_no
+        applied_unit_price = meter.manager_unit_price if applied_unit_price is None else applied_unit_price
         applied_fees = meter.due_fees
-        amount_to_be_paid = recharge_amount + applied_fees  # client has to pay the fees too
-        payment = Payment.objects.create_pending_payment(amount=amount_to_be_paid)
+        amount_to_be_paid = recharge_amount + applied_fees  # Client has to pay the fees too
+        payment = Payment.objects.create_pending_payment(amount=amount_to_be_paid, payer_phone_no=payer_phone_no)
         return self.create(meter=meter, payment=payment, applied_unit_price=applied_unit_price,
                            applied_fees=applied_fees, recharge_amount=recharge_amount)
 
@@ -60,8 +63,7 @@ class RechargeTokenOrder(models.Model):
 
     @property
     def num_of_units(self):
-        net_recharge_amount = self.payment.amount - self.applied_fees
-        return round(net_recharge_amount / self.applied_unit_price, 1)
+        return round(self.recharge_amount / self.applied_unit_price, 1)
 
     @property
     def payment_amount(self):
@@ -78,8 +80,7 @@ class RechargeTokenOrder(models.Model):
         return self.payment.external_id
 
     def pay(self, payer_phone_no=None):
-        payer_phone_no = self.customer.phone_no if payer_phone_no is None else payer_phone_no
-        external_payment_id = request_payment(self.transaction_id, self.payment_amount, payer_phone_no)
+        external_payment_id = request_payment(self.transaction_id, self.payment_amount, self.payment.payer_phone_no)
         self.set_external_payment_id(external_payment_id)
 
     def deliver(self):
@@ -100,9 +101,6 @@ class RechargeTokenOrder(models.Model):
 
     def is_delivered(self):
         return self.token_no is not None
-
-    def notify_customer(self, subject, message, strategy=BY_SMS):
-        self.customer.notify_by_sms(subject, message) if strategy is BY_SMS else self.customer.notify_by_email(subject, message)
 
     def set_external_payment_id(self, external_id):
         self.payment.set_external_id(external_id)

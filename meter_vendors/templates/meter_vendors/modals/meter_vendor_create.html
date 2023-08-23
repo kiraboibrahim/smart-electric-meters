@@ -2,38 +2,37 @@
 {% load access_controls %}
 
 {% onlyadmins %}
-<div class="position-fixed" style="bottom: 50px; right: 50px; z-index: 999">
-    <button type="button" class="btn btn-primary rounded-circle p-3" data-bs-toggle="modal"
-            data-bs-target="#meter-vendor-create-modal">
-        <span class="material-symbols-outlined">add</span>
-    </button>
-</div>
-<!-- Modal -->
-<div class="modal fade" id="meter-vendor-create-modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add vendor</h5>
-                <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form method="post" action="{% url 'meter_vendor_create' %}">
-                    {% csrf_token %}
-                    {{ meter_vendor_create_form | crispy }}
-                    <div class="form-group d-grid">
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
+    <div class="position-fixed" style="bottom: 50px; right: 50px; z-index: 999">
+        <button type="button" class="btn btn-primary rounded-circle p-3" data-bs-toggle="modal"
+                data-bs-target="#meter-vendor-create-modal">
+            <span class="material-symbols-outlined">add</span>
+        </button>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="meter-vendor-create-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Vendor</h5>
+                    <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" action="{% url 'meter_vendor_create' %}">
+                        {% csrf_token %}
+                        {{ meter_vendor_create_form | crispy }}
+                        <div class="form-group d-grid">
+                            <button type="submit" class="btn btn-primary">Save</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
-{% if meter_vendor_create_form.errors %}
-<script>
-    let meter_vendor_create_modal = new bootstrap.Modal(document.getElementById("meter-vendor-create-modal"));
-    meter_vendor_create_modal.show();
-</script>
-{% endif %}
+    {% if meter_vendor_create_form.errors %}
+        <script>
+            legitsystems_utils.show_modal("#meter-vendor-create-modal");
+        </script>
+    {% endif %}
 {% endonlyadmins %}

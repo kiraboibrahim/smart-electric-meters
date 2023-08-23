@@ -14,11 +14,11 @@ User = get_user_model()
 
 
 class MeterMonthlyFeePaymentLog(models.Model):
-    meter = models.OneToOneField("Meter", on_delete=models.PROTECT)
+    meter = models.OneToOneField("Meter", on_delete=models.CASCADE)
     last_paid_at = models.DateTimeField()
 
     def __str__(self):
-        return self.meter
+        return f"{self.meter.meter_number}"
 
 
 class MeterQuerySet(models.QuerySet):
@@ -76,12 +76,11 @@ class Meter(ModelDiffMixin, models.Model):
     def is_registered_with_vendor(self):
         return self.previous_vendor_registrations.all().filter(pk=self.vendor.id).exists()
 
-    def recharge(self, recharge_amount, applied_unit_price=None, payment_phone_no=None):
+    def recharge(self, recharge_amount, applied_unit_price=None, payer_phone_no=None):
         """ Get a recharge token for a meter"""
         from recharge_tokens.models import RechargeTokenOrder as Order
-        applied_unit_price = self.manager_unit_price if applied_unit_price is None else applied_unit_price
-        order = Order.objects.place_order(recharge_amount, applied_unit_price, self)
-        order.pay(payer_phone_no=payment_phone_no)
+        order = Order.objects.place_order(recharge_amount, self, applied_unit_price=applied_unit_price, payer_phone_no=payer_phone_no)
+        order.pay()
         return order
 
     def activate(self):

@@ -1,43 +1,43 @@
-{% load crispy_forms_tags %}
 {% load access_controls %}
+{% load crispy_forms_tags %}
 
 {% onlyadmins %}
-<div class="position-fixed" style="bottom: 50px; right: 50px; z-index: 999">
-    <button type="button" class="btn btn-primary rounded-circle p-3" data-bs-toggle="modal"
-            data-bs-target="#meter-create-modal">
-        <span class="material-symbols-outlined">add</span>
-    </button>
-</div>
-<!-- Modal -->
-<div class="modal fade" id="meter-create-modal" tabindex="-1" role="dialog" aria-labelledby="meter-create-modal__title"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h4 class="modal-title fs-5" id="meter-create-modal__title">Add Meter</h4>
-                <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="container-fluid">
-                    <form method="post" action="{% url 'meter_create' %}">
-                        {% csrf_token %}
-                        {{ meter_create_form | crispy }}
-                        <div class="form-group d-grid px-0">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </div>
-                    </form>
+    <div class="position-fixed" style="bottom: 50px; right: 50px; z-index: 999">
+        <button type="button" class="btn btn-primary rounded-circle p-3" data-bs-toggle="modal"
+                data-bs-target="#meter-create-modal">
+            <span class="material-symbols-outlined">add</span>
+        </button>
+    </div>
+
+    <div class="modal fade" id="meter-create-modal" tabindex="-1" role="dialog"
+         aria-labelledby="meter-create-modal__title"
+         aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Add Meter</h4>
+                    <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <form method="post" action="{% url 'meter_create' %}">
+                            {% csrf_token %}
+                            {{ meter_create_form | crispy }}
+                            <div class="form-group d-grid px-0">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-{% if meter_create_form.errors %}
-<script>
-let meter_create_modal  = bootstrap.Modal.getOrCreateInstance(document.getElementById("meter-create-modal"));
-meter_create_modal.show();
-</script>
-{% endif %}
+    <script>
+        {%  if meter_create_form.errors %}
+            legitsystems_utils.show_modal("#meter-create-modal");
+        {% endif %}
+        legitsystems_utils.initialize_select2_manager_list_field("#meter-create-form__manager", "#meter-create-modal");
+    </script>
 {% endonlyadmins %}

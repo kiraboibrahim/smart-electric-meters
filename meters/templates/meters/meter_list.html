@@ -5,18 +5,22 @@
 
 {% block title %} My meters {% endblock title %}
 
+{% block head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% endblock head %}
+
 {% block content %}
     {% include "meters/modals/meter_create.html" %}
     {% include "meters/modals/meter_recharge.html" %}
     {% include "meters/modals/meter_update.html" %}
 
     <div class="container mt-3">
-
         <div class="row mb-3">
             <h2 class="col-3 my-auto h-table-title">METERS</h2>
             <div class="col">
                 {% url "meter_list" as filter_form_submit_url %}
-                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="meter_number" search_field_placeholder="Meter number" %}
+                {% include "core/modals/filter.html" with submit_url=filter_form_submit_url search_field_name="meter_number" search_field_placeholder="Meter number" %}
             </div>
         </div>
         {% url 'meter_list' as filter_url %}
@@ -24,4 +28,7 @@
 
         {% include "core/components/pagination.html" %}
     </div>
+    <script>
+        legitsystems_utils.initialize_select2_manager_list_field("#meter-filter__manager", "#filter-modal")
+    </script>
 {% endblock content %}

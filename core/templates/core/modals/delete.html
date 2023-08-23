@@ -19,11 +19,11 @@
     </div>
 </div>
 <script>
-let delete_modal = document.getElementById("delete-modal");
+const delete_modal = document.getElementById("delete-modal");
 delete_modal.addEventListener("show.bs.modal", function (event) {
     let clicked_elem = event.relatedTarget;
     const delete_url = clicked_elem.getAttribute("data-href");
-    let delete_confirm = document.getElementById("delete-confirm");
+    let delete_confirm = delete_modal.querySelector("#delete-confirm");
     delete_confirm.onclick = function(event) {
        document.location.href = delete_url;
     }

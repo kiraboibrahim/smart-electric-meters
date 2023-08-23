@@ -7,7 +7,7 @@
             <tr>
                 <td class="h-table-column-header">Meter</td>
                 {% onlyadmins %}
-                <td class="h-table-column-header">Manager</td>
+                    <td class="h-table-column-header">Manager</td>
                 {% endonlyadmins %}
                 <td class="h-table-column-header">Vendor</td>
                 <td class="h-table-column-header">Registered</td>
@@ -21,7 +21,7 @@
                     <tr class="{% if not meter.is_active %} table-warning {% endif %}">
                         <td class="h-table-cell">{{ meter.meter_number }}</td>
                         {% onlyadmins %}
-                        <td class="h-table-cell">{{ meter.manager_full_name }}</td>
+                            <td class="h-table-cell">{{ meter.manager_full_name }}</td>
                         {% endonlyadmins %}
                         <td class="h-table-cell">{{ meter.vendor_name }}</td>
                         <td class="h-table-cell">
@@ -32,37 +32,49 @@
                             {% endif %}
                         </td>
                         <td class="h-table-cell h-table-number-cell">UGX {{ meter.due_fees|intcomma }}</td>
-                        <td class="d-flex">
-                            {% onlyadmins %}
-                            <a href="#" data-href="{% url 'meter_update' pk=meter_id %}" title="Edit meter" class="me-4"
-                               data-bs-toggle="modal" data-bs-target="#meter-update-modal" data-preinit="form"
-                               data-initial="{{ meter.as_json }}">
-                                <span class="material-symbols-outlined text-secondary">edit</span>
-                            </a>
-                            {% if not meter.is_registered_with_vendor %}
-                                <a href="{% url 'register_meter_with_vendor' pk=meter_id %}" title="Register with vendor" class="me-4">
-                                    <span class="material-symbols-outlined text-secondary">business_center</span>
+                        <td>
+                            <div class="d-flex">
+                                {% onlyadmins %}
+                                    <a href="#" data-form-action="{% url 'meter_update' pk=meter_id %}"
+                                       title="Edit meter"
+                                       class="me-4"
+                                       data-bs-toggle="modal" data-bs-target="#meter-update-modal" data-form-init="form"
+                                       data-form-initial="{{ meter.as_json }}">
+                                        <span class="material-symbols-outlined text-secondary">edit</span>
+                                    </a>
+                                    {% if not meter.is_registered_with_vendor %}
+                                        <a href="{% url 'register_meter_with_vendor' pk=meter_id %}"
+                                           title="Register with vendor" class="me-4">
+                                            <span class="material-symbols-outlined text-secondary">business_center</span>
+                                        </a>
+                                    {% endif %}
+                                {% endonlyadmins %}
+
+                                <a href="#" data-form-action="{% url 'meter_recharge' pk=meter_id %}"
+                                   title="Recharge meter"
+                                   class="me-4" data-bs-toggle="modal" data-bs-target="#meter-recharge-modal"
+                                   data-form-initial="{{ meter.get_recharge_info }}" data-form-init="form">
+                                    <span class="material-symbols-outlined text-secondary">bolt</span>
                                 </a>
-                            {% endif %}
-                            {% endonlyadmins %}
 
-                            <a href="#" data-href="{% url 'meter_recharge' pk=meter_id %}" title="Recharge meter"
-                               class="me-4" data-bs-toggle="modal" data-bs-target="#meter-recharge-modal"
-                               data-initial="{{ meter.get_recharge_info }}" data-preinit="form">
-                                <span class="material-symbols-outlined text-secondary">bolt</span>
-                            </a>
-
-                            {% onlyadmins %}
-                            {% if meter.is_active %}
-                                <span class="form-check form-switch">
-                                    <input class="form-check-input toggle-meter-state" type="checkbox" role="switch" checked data-href="{% url 'meter_deactivate' pk=meter_id %}">
-                                </span>
-                            {% else %}
-                                <span class="form-check form-switch">
-                                    <input class="form-check-input toggle-meter-state" type="checkbox" role="switch" data-href="{% url 'meter_activate' pk=meter_id %}">
-                                </span>
-                            {% endif %}
-                            {% endonlyadmins %}
+                                {% onlyadmins %}
+                                    {% if meter.is_active %}
+                                        <a href="{% url 'meter_deactivate' pk=meter_id %}">
+                                    <span class="form-check form-switch">
+                                        <input id="deactivate-meter" class="form-check-input position-static"
+                                               type="checkbox" role="switch" aria-label="Deactivate meter" checked>
+                                    </span>
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'meter_activate' pk=meter_id %}">
+                                        <span class="form-check form-switch">
+                                            <input id="activate-meter" class="form-check-input position-static"
+                                                   type="checkbox" role="switch" aria-label="Activate meter">
+                                        </span>
+                                        </a>
+                                    {% endif %}
+                                {% endonlyadmins %}
+                            </div>
                         </td>
                     </tr>
                 {% endwith %}
@@ -76,10 +88,4 @@
     </div>
 {% endif %}
 <script>
-    // Listen to click events on activation switches and redirect to respective url
-    document.querySelectorAll(".toggle-meter-state").forEach(function(element) {
-       element.addEventListener("click", function(event) {
-           document.location.href=event.target.getAttribute("data-href");
-       });
-    });
 </script>

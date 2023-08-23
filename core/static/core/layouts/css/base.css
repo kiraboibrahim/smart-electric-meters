@@ -13,15 +13,19 @@ label {
     display: inline-block;
     margin-left: 5px;
 }
-input:not(.btn), select {
+input:not(.btn), select, .select2-selection__rendered {
     color: #737373 !important;
     font-size: 13px !important;
+}
+.select2-selection--single {
+    height: 32px !important;
 }
 .input-group ~ .invalid-feedback {
     display: block;
 }
 [readonly] {
     pointer-events: none;
+    background-color: #d9d9d9;
 }
 .settings__icon {
     color: #999999;

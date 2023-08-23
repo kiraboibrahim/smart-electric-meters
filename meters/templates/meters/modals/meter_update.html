@@ -2,35 +2,36 @@
 {% load access_controls %}
 
 {% onlyadmins %}
-<!-- Modal -->
-<div class="modal fade" id="meter-update-modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Edit Meter</h5>
-                <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="container-fluid">
-                    <form id="meter-update-form" method="post">
-                        {% csrf_token %}
-                        {{ meter_update_form | crispy }}
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Save</button>
-                        </div>
-                    </form>
+    <div class="modal fade" id="meter-update-modal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Meter</h5>
+                    <button type="button" class="btn close fs-4" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        <form id="meter-update-form" method="post">
+                            {% csrf_token %}
+                            {{ meter_update_form | crispy }}
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Save</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-
-{% if meter_update_form.errors %}
-<script>
-let meter_update_modal  = bootstrap.Modal.getOrCreateInstance(document.getElementById("meter-update-modal"));
-meter_update_modal.show();
-</script>
-{% endif %}
+    <script>
+        {% if meter_update_form.errors %}
+            legitsystems_utils.show_modal("#meter-update-modal");
+        {% endif %}
+        const meter_update_modal = document.getElementById("meter-update-modal");
+        const meter_update_form = document.getElementById("meter-update-form");
+        legitsystems_utils.initialize_form_in_modal(meter_update_form, meter_update_modal, field_id_mapping={"manager": "#meter-update-form__manager"});
+        legitsystems_utils.initialize_select2_manager_list_field("#meter-update-form__manager", "#meter-update-modal");
+    </script>
 {% endonlyadmins %}

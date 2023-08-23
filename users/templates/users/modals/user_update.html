@@ -4,7 +4,7 @@
 {% onlyadmins %}
     <!-- Modal -->
     <div class="modal fade" id="user-update-modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-fullscreen-sm-down" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit User</h5>
@@ -32,7 +32,8 @@
                     <div class="tab-content">
                         <div class="tab-pane fade show {% if not user_update_form.is_bound and not set_password_form.is_bound or user_update_form.is_bound %} active {% endif %}"
                              id="bio" role="tabpanel">
-                            <form class="p-3" method="post" {% if user_update_form.is_bound %} action="{{ reqeust.path_info }}" {% endif %}>
+                            <form id="bio-update-form" class="p-3" method="post" {% if user_update_form.is_bound %}
+                                  action="{{ request.path_info }}?scope=bio" {% endif %}>
                                 {% csrf_token %}
                                 {{ user_update_form | crispy }}
                                 <div class="form-group d-grid px-0">
@@ -42,7 +43,8 @@
                         </div>
                         <div class="tab-pane fade show {% if set_password_form.is_bound %} active {% endif %}"
                              id="set-new-password" role="tabpanel">
-                            <form class="mt-3" method="post" {% if set_password_form.is_bound %} action="{{ reqeust.path_info }}" {% endif %}>
+                            <form id="set-new-password-form" class="mt-3" method="post"
+                                    {% if set_password_form.is_bound %} action="{{ request.path_info }}?scope=pwd" {% endif %}>
                                 {% csrf_token %}
                                 {{ set_password_form | crispy }}
                                 <div class="form-group d-grid px-0">
@@ -57,16 +59,18 @@
             </div>
         </div>
     </div>
-    {% if user_update_form.errors or set_password_form.errors %}
-        <script>
-            bootstrap.Modal.getOrCreateInstance(document.getElementById("user-update-modal")).show();
-        </script>
-    {% endif %}
+
     <script>
-        document.getElementById("user-update-modal").addEventListener("shown.bs.modal", function(event) {
-            {# Bio update form submit url and the set password url differ only by the GET param 'scope' #}
-            const bio_form_submit_url = event.target.querySelector("#bio form").action
-            event.target.querySelector("#set-new-password form").action = `${bio_form_submit_url}?scope=pwd`;
+        {% if user_update_form.errors or set_password_form.errors %}
+            legitsystems_utils.show_modal("#user-update-modal");
+        {% endif %}
+
+        const user_update_modal = document.getElementById("user-update-modal");
+        const bio_update_form = user_update_modal.querySelector("#bio-update-form");
+
+        legitsystems_utils.initialize_form_in_modal(bio_update_form, user_update_modal, {"phone_no": "#id_phone_no_1"});
+        user_update_modal.addEventListener("shown.bs.modal", function (event) {
+            event.target.querySelector("#set-new-password-form").action = event.relatedTarget.getAttribute("data-set-password-url");
         });
     </script>
 {% endonlyadmins %}

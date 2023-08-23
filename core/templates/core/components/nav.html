@@ -30,10 +30,10 @@
             </li>
 
             {% onlyadmins %}
-            <li class="nav-item mb-2 {% if user_list_url == request.path_info %} nav-item--active {% endif %}">
-                <span class="material-symbols-outlined md-dark ps-2">group</span>
-                <a href="{{ user_list_url }}" class="nav-link">Users</a>
-            </li>
+                <li class="nav-item mb-2 {% if user_list_url == request.path_info %} nav-item--active {% endif %}">
+                    <span class="material-symbols-outlined md-dark ps-2">group</span>
+                    <a href="{{ user_list_url }}" class="nav-link">Users</a>
+                </li>
             {% endonlyadmins %}
             <li class="nav-divider"></li>
 
@@ -43,10 +43,10 @@
             </li>
 
             {% onlyadmins %}
-            <li class="nav-item mb-2 {% if vendor_list_url == request.path_info %} nav-item--active {% endif %}">
-                <span class="material-symbols-outlined md-dark ps-2">business_center</span>
-                <a href="{{ vendor_list_url }}" class="nav-link">Vendors</a>
-            </li>
+                <li class="nav-item mb-2 {% if vendor_list_url == request.path_info %} nav-item--active {% endif %}">
+                    <span class="material-symbols-outlined md-dark ps-2">business_center</span>
+                    <a href="{{ vendor_list_url }}" class="nav-link">Vendors</a>
+                </li>
             {% endonlyadmins %}
 
             <li class="nav-divider"></li>
@@ -57,11 +57,6 @@
             </li>
         </ul>
     </div>
-
-    <!--footer class="row mt-auto">
-        <small class="col-12"><a href="https://www.flaticon.com/free-icons/user" title="user icons">User icons
-            created by Flat Icons - Flaticon</a></small>
-    </footer-->
 </nav>
 <div class="nav-overlay"></div>
 <script>

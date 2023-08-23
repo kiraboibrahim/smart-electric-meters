@@ -27,13 +27,13 @@
                 </td>
                 <td>
                     <a class="text-primary me-4" href="#"
-                       data-href="{% url 'meter_vendor_update' pk=meter_vendor.id %}" data-bs-toggle="modal"
-                       data-bs-target="#vendor-update-modal" data-preinit="form"
-                       data-initial="{{ meter_vendor.as_json }}">
+                       data-form-action="{% url 'meter_vendor_update' pk=meter_vendor.id %}" data-bs-toggle="modal"
+                       data-bs-target="#vendor-update-modal" data-form-init="form"
+                       data-form-initial="{{ meter_vendor.as_json }}">
                         <span class="material-symbols-outlined">edit</span>
                     </a>
                     <a class="text-danger d-inline-block" href="#"
-                       data-href="{% url 'meter_vendor_delete' pk=meter_vendor.id %}" data-bs-toggle="modal"
+                       data-form-action="{% url 'meter_vendor_delete' pk=meter_vendor.id %}" data-bs-toggle="modal"
                        data-bs-target="#delete-modal">
                         <span class="material-symbols-outlined">delete</span>
                     </a>

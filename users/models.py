@@ -3,7 +3,6 @@ import json
 from django.db import models
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.models import AbstractUser
-from django.core.serializers import serialize
 
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -21,7 +20,9 @@ class UserQuerySet(models.QuerySet):
     def for_user(self, user):
         if user.is_super_admin():
             return self.filter(MANAGERS_OR_ADMINS).exclude(account_type=DEFAULT_MANAGER)
-        return self.managers()
+        elif user.is_admin():
+            return self.managers().exclude(account_type=DEFAULT_MANAGER)
+        return self.none()
 
 
 class User(AbstractUser):
@@ -101,11 +102,13 @@ class User(AbstractUser):
             send_notification([self.email], subject, message, notification_strategy=BY_EMAIL)
 
     def notify_by_sms(self, subject, message):
-        send_notification([str(self.phone_no).lstrip("+")], subject, message, notification_strategy=BY_SMS)
+        send_notification([str(self.phone_no)], subject, message, notification_strategy=BY_SMS)
 
     def as_json(self):
         from .serializers import UserSerializer
-        return json.dumps(UserSerializer(self).data)
+        data = UserSerializer(self).data
+        data["phone_no"] = self.phone_no.national_number
+        return json.dumps(data)
 
     def __str__(self):
         return self.full_name

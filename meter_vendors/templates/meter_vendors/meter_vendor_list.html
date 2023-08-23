@@ -18,7 +18,7 @@
             <h2 class="col-3 h-table-title">VENDORS</h2>
             <div class="col">
                 {% url 'meter_vendor_list' as filter_form_submit_url %}
-                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Vendor name" %}
+                {% include "core/modals/filter.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Vendor name" %}
             </div>
         </div>
 

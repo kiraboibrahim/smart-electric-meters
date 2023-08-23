@@ -1,3 +1,4 @@
+from django.db import models
 from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.contrib.auth.base_user import BaseUserManager
@@ -75,4 +76,4 @@ class UserManager(BaseUserManager):
         return filters, defaults
 
     def all_managers(self):
-        return self.all().filter(account_type=MANAGER)
+        return self.all().filter(models.Q(account_type=MANAGER) | models.Q(account_type=DEFAULT_MANAGER))

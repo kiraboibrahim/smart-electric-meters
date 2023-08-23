@@ -20,13 +20,13 @@ class RechargeTokenOrderFilter(django_filters.FilterSet):
         fields = ("order_id", "manager", "from_", "to")
 
     def get_form_class(self):
-        base_form_class = super().get_form_class()
+        BaseFormClass = super().get_form_class()
 
-        class FormClass(base_form_class):
+        class FormClass(BaseFormClass):
             from_ = forms.DateField(widget=DateInput(), required=False)
             to = forms.DateField(widget=DateInput(), required=False)
             if self.request.user.is_admin() or self.request.user.is_super_admin():
-                manager = forms.ModelChoiceField(queryset=User.objects.all_managers(), required=False, empty_label="No manager selected")
+                manager = forms.ModelChoiceField(queryset=User.objects.all_managers(), required=False, empty_label="No manager selected", widget=forms.Select(attrs={"id": "order-filter__manager"}))
             else:
                 manager = None  # Managers aren't allowed to filter by this field
 

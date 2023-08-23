@@ -24,3 +24,4 @@ class DateInput(forms.TextInput):
         attrs["type"] = "date"
         kwargs["attrs"] = attrs
         super().__init__(*args, **kwargs)
+

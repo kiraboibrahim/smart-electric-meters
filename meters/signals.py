@@ -5,5 +5,5 @@ from payments.signals import payment_successful
 
 
 @receiver(payment_successful, sender=Payment)
-def update_meter_last_payment_date(sender, payment, associated_order, **kwargs):
-    associated_order.meter.update_last_payment_date(payment.created_at)
+def update_meter_last_payment_date(sender, payment, **kwargs):
+    payment.order.meter.update_last_payment_date(payment.created_at)

@@ -140,7 +140,9 @@ CRISPY_TEMPLATE_PACK = "bootstrap5"
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         'rest_framework.permissions.IsAuthenticated'
-    ]
+    ],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 20
 }
 
 LOGGING = {
@@ -218,7 +220,7 @@ LEGIT_SYSTEMS_DEFAULT_MANAGER = {
 }
 LEGIT_SYSTEMS_DEFAULT_UNIT_PRICE = 1000  # UGX
 
-LEGIT_SYSTEMS_PAYMENT_BACKEND = "core.services.payment.backends.payleo.PayLeoPaymentBackend"
+LEGIT_SYSTEMS_PAYMENT_BACKEND = "core.services.payment.backends.prepaid.PrepaidPaymentBackend"
 LEGIT_SYSTEMS_EMAIL_NOTIFICATION_BACKEND = "core.services.notification.backends.email.EmailNotificationBackend"
 LEGIT_SYSTEMS_SMS_NOTIFICATION_BACKEND = "core.services.notification.backends.trueafrican.TrueAfricanSMSBackend"
 

@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 
+from phonenumber_field.modelfields import PhoneNumberField
+
 from meters.models import Meter
 
 from .managers import PaymentManager
@@ -22,6 +24,7 @@ class Payment(models.Model):
 
     amount = models.PositiveIntegerField()
     status = models.PositiveIntegerField(choices=STATUS_CHOICES)
+    payer_phone_no = PhoneNumberField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     external_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
@@ -47,14 +50,14 @@ class Payment(models.Model):
         self.status = self.PAYMENT_FAILED
         self.failure_reason = reason
         self.save(update_fields=["status", "failure_reason"])
-        payment_failed.send(sender=self.__class__, payment=self, associated_order=self.order)
+        payment_failed.send(sender=self.__class__, payment=self)
 
     def mark_as_successful(self):
         if not self.is_pending():
             return
         self.status = self.PAYMENT_SUCCESSFUL
         self.save(update_fields=["status"])
-        payment_successful.send(sender=self.__class__, payment=self, associated_order=self.order)
+        payment_successful.send(sender=self.__class__, payment=self)
 
     def set_external_id(self, external_id):
         if self.external_id is not None:

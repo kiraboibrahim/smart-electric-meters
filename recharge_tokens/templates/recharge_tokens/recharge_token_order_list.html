@@ -6,13 +6,18 @@
 
 {% block title %} My Orders {% endblock title %}
 
+{% block head %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+{% endblock head %}
+
 {% block content %}
     <div class="container mt-3">
         <div class="row mb-2 align-items-center">
             <h2 class="col-3 me-auto h-table-title">ORDERS</h2>
             <div class="col">
                 {% url 'recharge_token_order_list' as filter_form_submit_url %}
-                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="order_id" search_field_placeholder="Order ID" %}
+                {% include "core/modals/filter.html" with submit_url=filter_form_submit_url search_field_name="order_id" search_field_placeholder="Order ID" %}
             </div>
         </div>
 
@@ -21,6 +26,10 @@
                 {% include "recharge_tokens/components/recharge_token_order_list.html" %}
             </div>
         </div>
-    {% include "core/components/pagination.html" %}
+        {% include "core/components/pagination.html" %}
     </div>
+    <script>
+        legitsystems_utils.initialize_select2_manager_list_field("#order-filter__manager", "#filter-modal")
+    </script>
+
 {% endblock content %}

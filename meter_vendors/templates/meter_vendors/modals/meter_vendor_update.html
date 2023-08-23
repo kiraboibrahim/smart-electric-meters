@@ -13,7 +13,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form method="post">
+                <form method="post" id="vendor-update-form">
                     {% csrf_token %}
                     {{ meter_vendor_update_form | crispy }}
                     <div class="d-grid">
@@ -24,10 +24,12 @@
         </div>
     </div>
 </div>
-{% if meter_vendor_update_form.errors %}
 <script>
-let vendor_update_modal  = bootstrap.Modal.getOrCreateInstance(document.getElementById("vendor-update-modal"));
-vendor_update_modal.show();
+    {% if meter_vendor_update_form.errors %}
+        legitsystems_utils.show_modal("#vendor-update-modal");
+    {% endif %}
+    const vendor_update_modal = document.getElementById("vendor-update-modal");
+    const vendor_update_form = vendor_update_modal.querySelector("#vendor-update-form");
+    legitsystems_utils.initialize_form_in_modal(vendor_update_form, vendor_update_modal, field_id_mapping={"phone_no": "#id_phone_no_1"});
 </script>
-{% endif %}
 {% endonlyadmins %}

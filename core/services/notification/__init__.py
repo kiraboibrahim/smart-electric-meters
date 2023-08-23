@@ -16,7 +16,3 @@ def send_notification(to: list[str], subject: str, message: str, notification_st
     else:
         raise ValueError("Unknown notification strategy")
     return notification_backend.send(to, subject, message)
-
-
-def test_sms():
-    send_notification(["256709645302"], "Hello", "Message Testing", notification_strategy=BY_SMS)

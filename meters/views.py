@@ -84,7 +84,7 @@ class MeterRechargeView(LoginRequiredMixin, SingleObjectMixin, SuccessMessageMix
                         TemplateResponseMixin, View):
     model = Meter
     template_name = "meters/meter_list.html"
-    success_message = "Please, wait for the payment prompt and authorize the payment"
+    success_message = "Please wait for the payment prompt to authorize the payment"
     form_class = MeterRechargeForm
 
     def get(self, request, *args, **kwargs):

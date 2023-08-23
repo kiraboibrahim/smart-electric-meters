@@ -10,10 +10,10 @@ User = get_user_model()
 
 
 class UserListAPIView(ListAPIView):
-    queryset = User.objects.all_managers()
+    queryset = User.objects.all_managers()  # Only managers are returned
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrSuperAdmin]
 
     def get_queryset(self):
-        query = self.request.GET.get("q")
+        query = self.request.GET.get("q", "")
         return super().get_queryset().filter(Q(first_name__icontains=query) | Q(last_name__icontains=query))

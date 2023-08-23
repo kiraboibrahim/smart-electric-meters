@@ -3,26 +3,32 @@
     color: #999999;
     font-size: 13px;
 }
+
 .nav-link {
     color: #B3B3B3;
     display: inline-block;
 }
+
 .nav-item--active {
     background-color: #00254D;
     border-top-right-radius: 25px;
     border-bottom-right-radius: 25px;
 }
+
 .nav-link:hover {
     color: inherit;
 }
+
 .nav-opener {
     display: none;
 }
+
 .nav-divider {
     border-bottom: 1px solid #002B59;
     margin-top: 15px;
     margin-bottom: 15px;
 }
+
 .nav-overlay {
     display: none;
 }
@@ -31,6 +37,7 @@
     .nav-opener {
         display: block;
     }
+
     #nav {
         transition: margin-left .5s linear;
         position: fixed;
@@ -42,6 +49,7 @@
         z-index: 1001;
         overflow-y: scroll;
     }
+
     .nav-overlay {
         position: fixed;
         top: 0;
@@ -52,6 +60,7 @@
         display: none;
         background-color: rgba(0, 0, 0, .4);
     }
+
     #nav.nav-open {
         display: flex !important;
         flex-direction: column;

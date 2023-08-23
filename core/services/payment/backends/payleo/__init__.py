@@ -32,6 +32,6 @@ class PayLeoPaymentBackend(PaymentBackend):
                 raise FailedPaymentException(f"{response['message']}")
             # Return the APIs transaction ID; This is different from the transactionId in the payload
             return response["transactionId"]
-        except Exception as e:
-            logger.exception(str(e))
-            raise FailedPaymentException(str(e))
+        except Exception as exc:
+            logger.exception(str(exc))
+            raise FailedPaymentException(str(exc))

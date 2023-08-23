@@ -1,6 +1,11 @@
+from django import forms
+from django.contrib.auth import get_user_model
+
 import django_filters
 
 from .models import Meter
+
+User = get_user_model()
 
 
 class MeterFilter(django_filters.FilterSet):
@@ -12,17 +17,19 @@ class MeterFilter(django_filters.FilterSet):
 
     def get_form_class(self):
         user_is_manager = self.request.user.is_manager()
-        base_form_class = super().get_form_class()
+        BaseFormClass = super().get_form_class()
 
-        class FormClass(base_form_class):
+        class FormClass(BaseFormClass):
+            manager = forms.ModelChoiceField(queryset=User.objects.all_managers(), required=False,
+                                             empty_label="No manager selected",
+                                             widget=forms.Select(attrs={"id": "meter-filter__manager"}))
+
             if user_is_manager:
                 manager = None  # Managers are not allowed to filter by this field
 
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
                 self.fields["vendor"].empty_label = "No vendor selected"
-                if "manager" in self.fields:
-                    self.fields["manager"].empty_label = "No manager selected"
                 is_active_choices = [("", "No state selected")] + list(self.fields["is_active"].widget.choices)[1:]
                 self.fields["is_active"].widget.choices = is_active_choices
 

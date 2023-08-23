@@ -63,18 +63,13 @@ class ManagerCreateForm(BaseUserCreateForm):
 
 
 class UserUpdateForm(ModelForm):
-    ACCOUNT_TYPE_CHOICES = (
-        (MANAGER, "Manager"),
-        (ADMIN, "Admin")
-    )
-    account_type = forms.ChoiceField(label="Account type", choices=ACCOUNT_TYPE_CHOICES)
 
     class Meta:
         model = User
         labels = {
             "phone_no": "Phone number"
         }
-        fields = ["first_name", "last_name", "email", "phone_no", "address", "account_type"]
+        fields = ["first_name", "last_name", "email", "phone_no", "address"]
         widgets = {
             "phone_no": PhoneNumberPrefixWidget(country_choices=COUNTRY_CHOICES)
         }
@@ -82,8 +77,6 @@ class UserUpdateForm(ModelForm):
     def __init__(self, updater, *args, **kwargs):
         self.updater = updater  # Who is updating the user?
         super().__init__(*args, **kwargs)
-        if self.updater.is_admin():
-            del self.fields["account_type"]  # Admins can't change to any account type
 
     def save(self, commit=True):
         to_be_updated_user = self.instance

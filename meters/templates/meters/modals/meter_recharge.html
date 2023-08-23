@@ -25,15 +25,16 @@
     </div>
 </div>
 
-{% if meter_recharge_form.errors %}
-    <script>
-        bootstrap.Modal.getOrCreateInstance(document.getElementById("meter-recharge-modal")).show();
-    </script>
-{% endif %}
 <script>
+    {% if meter_recharge_form.errors %}
+        legitsystems_utils.show_modal("#meter-recharge-modal");
+    {% endif %}
     const meter_recharge_modal = document.getElementById("meter-recharge-modal");
+    const meter_recharge_form = document.getElementById("meter-recharge-form");
+
+    legitsystems_utils.initialize_form_in_modal(meter_recharge_form, meter_recharge_modal, field_id_mapping={"pay_with": "#id_pay_with_1"});
     meter_recharge_modal.addEventListener("show.bs.modal", function (event) {
-        let due_fess = parseInt(JSON.parse(event.relatedTarget.getAttribute("data-initial"))["due_fees"]);
+        let due_fess = parseInt(JSON.parse(event.relatedTarget.getAttribute("data-form-initial"))["due_fees"]);
         due_fess = due_fess.toLocaleString(undefined, {style: 'currency', currency: 'UGX', minimumFractionDigits: 0, maximumFractionDigits: 0})
         document.querySelector("#due-fees-alert").textContent = `Charges: ${due_fess}`;
     });

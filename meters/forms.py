@@ -14,29 +14,31 @@ User = get_user_model()
 
 
 class MeterCreateForm(forms.ModelForm):
-    skip_vendor_registration = forms.BooleanField(required=False)
 
     class Meta:
         model = Meter
-        exclude = ("is_active", "is_registered_with_vendor", "created_at", "previous_vendor_registrations")
+        fields = ("meter_number", "vendor", "manager")
+        widgets = {
+            "manager": forms.Select(attrs={"id": "meter-create-form__manager"})
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["vendor"].empty_label = "Select a vendor"
-
-    def save(self, commit=True):
-        skip_vendor_registration = self.cleaned_data.pop("skip_vendor_registration")
-        meter = super().save(commit)
-        if not skip_vendor_registration:
-            meter.register()
-        return meter
 
 
 class MeterUpdateForm(forms.ModelForm):
 
     class Meta:
         model = Meter
-        exclude = ("is_active", "is_created", "is_registered_with_vendor", "previous_vendor_registrations")
+        fields = ("meter_number", "vendor", "manager")
+        widgets = {
+            "manager": forms.Select(attrs={"id": "meter-update-form__manager"})
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["vendor"].empty_label = "Select a vendor"
 
 
 class MeterRechargeForm(forms.Form):
@@ -49,7 +51,7 @@ class MeterRechargeForm(forms.Form):
         self.user = user
         super().__init__(*args, **kwargs)
         if self.user.is_manager():
-            self.fields["applied_unit_price"].widget.attrs = {"readonly": "readonly", "disabled": "disabled"}
+            self.fields["applied_unit_price"].widget.attrs = {"readonly": "readonly"}
 
     def clean(self):
         cleaned_data = super().clean()
@@ -72,6 +74,6 @@ class MeterRechargeForm(forms.Form):
         applied_unit_price = self.meter.manager_unit_price if self.user.is_manager() else \
             self.cleaned_data["applied_unit_price"]
         recharge_amount = self.cleaned_data["recharge_amount"]
-        payment_phone_no = self.cleaned_data["pay_with"]
-        return self.meter.recharge(recharge_amount, applied_unit_price=applied_unit_price, payment_phone_no=payment_phone_no)
+        payer_phone_no = self.cleaned_data["pay_with"]
+        return self.meter.recharge(recharge_amount, applied_unit_price=applied_unit_price, payer_phone_no=payer_phone_no)
 

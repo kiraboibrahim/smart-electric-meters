@@ -2,8 +2,9 @@
 <request>
     <method>receivePayment</method>
     <msisdn>256772123456</msisdn>
-    <transactionId>139932929199191</transactionId>
+    <transactionId>1399329291991912</transactionId>
     <referenceId>32432432423423222</referenceId>
     <amount>500</amount>
+    <message></message>
     <client_transaction>39293292142323</client_transaction>
 </request>

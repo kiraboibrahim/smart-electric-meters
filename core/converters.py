@@ -1,7 +1,7 @@
 from django.conf import settings
 from hashids import Hashids
 
-hashids = Hashids(settings.HASHIDS_SALT, min_length=14)
+hashids = Hashids(settings.HASHIDS_SALT, min_length=10)
 
 
 def h_encode(pk):

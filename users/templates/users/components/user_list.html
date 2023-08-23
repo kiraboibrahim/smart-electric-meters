@@ -27,9 +27,10 @@
                     <td class="h-table-cell">{{ user.address|title }}</td>
                     <td>
                         {% url "user_update" pk=user.id as user_update_url %}
-                        <a href="#" data-href="{{ user_update_url }}" data-set-password-url="{{ user_update_url }}?scope=pwd" title="Edit User" class="me-4"
-                           data-bs-toggle="modal" data-bs-target="#user-update-modal" data-preinit="form"
-                           data-initial="{{ user.as_json }}">
+                        <a href="#" data-form-action="{{ user_update_url }}"
+                           data-set-password-url="{{ user_update_url }}?scope=pwd" title="Edit User" class="me-4"
+                           data-bs-toggle="modal" data-bs-target="#user-update-modal" data-form-init="form"
+                           data-form-initial="{{ user.as_json }}">
                             <span class="material-symbols-outlined">edit</span>
                         </a>
                         <a href="#" data-href="{% url 'user_delete' pk=user.id %}" title="Deactivate User"

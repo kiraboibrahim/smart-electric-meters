@@ -10,7 +10,7 @@
     </div>
     <!-- Modal -->
     <div class="modal fade" id="user-create-modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog modal-dialog-scrollable" role="document">
+        <div class="modal-dialog modal-fullscreen-sm-down modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Add User</h5>
@@ -20,16 +20,16 @@
                 </div>
                 <div class="modal-body">
                     <ul class="nav nav-tabs" role="tablist">
-                    {% onlysuperadmins%}
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link {% if admin_create_form.is_bound %} active {% endif %}"
-                                    data-bs-toggle="tab"
-                                    role="button"
-                                    data-bs-target="#admin"
-                                    role="tab">Admin
-                            </button>
-                        </li>
-                    {% endonlysuperadmins %}
+                        {% onlysuperadmins %}
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {% if admin_create_form.is_bound %} active {% endif %}"
+                                        data-bs-toggle="tab"
+                                        role="button"
+                                        data-bs-target="#admin"
+                                        role="tab">Admin
+                                </button>
+                            </li>
+                        {% endonlysuperadmins %}
                         <li class="nav-item" role="presentation">
                             <button class="nav-link {% if not manager_create_form.is_bound and not admin_create_form.is_bound or manager_create_form.is_bound %} active {% endif %}"
                                     data-bs-toggle="tab"
@@ -40,19 +40,19 @@
                         </li>
                     </ul>
                     <div class="tab-content">
-                    {% onlysuperadmins %}
-                        <div class="tab-pane fade show {% if admin_create_form.is_bound %} active {% endif %}"
-                             id="admin" role="tabpanel">
-                            <form class="p-3" method="post"
-                                  action="{% url 'user_create' %}?type={{ admin_create_form.ACCOUNT_TYPE }}">
-                                {% csrf_token %}
-                                {{ admin_create_form | crispy }}
-                                <div class="form-group d-grid px-0">
-                                    <button class="btn btn-primary" type="submit">Save</button>
-                                </div>
-                            </form>
-                        </div>
-                    {% endonlysuperadmins %}
+                        {% onlysuperadmins %}
+                            <div class="tab-pane fade show {% if admin_create_form.is_bound %} active {% endif %}"
+                                 id="admin" role="tabpanel">
+                                <form class="p-3" method="post"
+                                      action="{% url 'user_create' %}?type={{ admin_create_form.ACCOUNT_TYPE }}">
+                                    {% csrf_token %}
+                                    {{ admin_create_form | crispy }}
+                                    <div class="form-group d-grid px-0">
+                                        <button class="btn btn-primary" type="submit">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        {% endonlysuperadmins %}
                         <div class="tab-pane fade show {% if not manager_create_form.is_bound and not admin_create_form.is_bound or manager_create_form.is_bound %} active {% endif %}"
                              id="manager" role="tabpanel">
                             <form class="p-3" method="post"
@@ -72,8 +72,7 @@
 
     {% if admin_create_form.errors or manager_create_form.errors %}
         <script>
-            const user_create_modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("user-create-modal"));
-            user_create_modal.show();
+            legitsystems_utils.show_modal("#user-create-modal");
         </script>
     {% endif %}
 {% endonlyadmins %}

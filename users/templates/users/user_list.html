@@ -19,7 +19,7 @@
             <h2 class="col-3 me-auto h-table-title">USERS</h2>
             <div class="col">
                 {% url 'user_list' as filter_form_submit_url %}
-                {% include "core/components/filter_form.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Account name" %}
+                {% include "core/modals/filter.html" with submit_url=filter_form_submit_url search_field_name="name" search_field_placeholder="Account name" %}
             </div>
         </div>
         <div class="row">

@@ -20,13 +20,14 @@
         <button type="button" class="btn btn-sm btn-outline-secondary ms-auto d-none position-relative" data-bs-toggle="modal"
                 data-bs-target="#filter-modal">
             <span class="material-symbols-outlined">tune</span>
-            <span id="active-filter-badge" class="position-absolute top-0 start-100 translate-middle p-2 bg-danger rounded-circle d-none">
+            <span id="bound-filter-badge" class="position-absolute top-0 start-100 translate-middle p-2 bg-danger rounded-circle d-none">
                 <span class="visually-hidden">You have active filters</span>
             </span>
         </button>
     </div>
 
     <div class="modal fade" id="filter-modal" tabindex="-1" role="dialog">
+    <!-- The modal holds the other filter fields except the search field -->
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -54,10 +55,10 @@
 </form>
 <script>
     const filter_form = document.getElementById("filter-form");
-    const filter_modal = document.getElementById("filter-modal");
-    const search_field = document.querySelector(".search-field input");
-    const filter_modal_toggler = document.querySelector("[data-bs-target='#filter-modal']");
-    const active_filter_badge = document.querySelector("#active-filter-badge");
+    const filter_modal = filter_form.querySelector("#filter-modal");
+    const search_field = filter_form.querySelector(".search-field input");
+    const bound_filter_badge = filter_form.querySelector("#bound-filter-badge");
+    const filter_modal_toggler = filter_form.querySelector("[data-bs-target='#filter-modal']");
 
     search_field.placeholder = "{{ search_field_placeholder }}";
 
@@ -66,24 +67,60 @@
         document.location.href = filter_form.getAttribute("action");
     }
     function show_filter_modal_toggler() {
-        const modal_contains_inputs = filter_modal.querySelector("input") || filter_modal.querySelector("select");
-        if (modal_contains_inputs) filter_modal_toggler.classList.remove("d-none");
-        const inputs = Array.from(filter_modal.querySelectorAll("input")).concat(Array.from(filter_modal.querySelectorAll("select")));
-        function bound_input(input) {
-            return !!input.value;
+        const modal_has_filters = filter_modal.querySelector("input") || filter_modal.querySelector("select");
+        if (modal_has_filters) filter_modal_toggler.classList.remove("d-none");
+        const filters = Array.from(filter_modal.querySelectorAll("input")).concat(Array.from(filter_modal.querySelectorAll("select")));
+        const is_bound_filter = (filter) => {
+            const doc_location = new URL(document.location.href);
+            const search_params = new URLSearchParams(doc_location.search);
+            return search_params.has(filter.getAttribute("name"));
         }
-        if (inputs.some(bound_input)) active_filter_badge.classList.remove("d-none");
+        if(filters.some(is_bound_filter)) bound_filter_badge.classList.remove("d-none");
     }
-    // Credited to: https://stackoverflow.com/users/1312346/francesco-frassinelli
-    // Answered on: https://stackoverflow.com/questions/8029532/how-to-prevent-submitting-the-html-forms-input-field-value-if-it-empty/64029534#64029534
-    function remove_form_empty_values_on_submit(form) {
-        form.addEventListener('formdata', function(event) {
-            let form_data = event.formData;
-            for (let [name, value] of Array.from(form_data.entries())) {
-                if (value === '') form_data.delete(name);
-            }
-        });
-    }
+
     show_filter_modal_toggler();
-    remove_form_empty_values_on_submit(filter_form);
+    legitsystems_utils.remove_form_empty_values_on_submit(filter_form);
+
+    const filter_styles = `
+    #filter-form select.form-control:not([size]):not([multiple]) {
+        height: 30px;
+        font-size: 13px;
+        border-radius: 0;
+    }
+    .search-field {
+        --bg-color: #ECECEC;
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--bg-color);
+        border-radius: 8px;
+        padding: 4px;
+        background-color: var(--bg-color);
+    }
+    .search-field > div {
+        margin-bottom: 0 !important;
+        flex: 1 1 auto;
+    }
+    .search-field label {
+        display: none;
+    }
+    .search-field input, .search-btn {
+        border: none;
+        background-color: var(--bg-color);
+    }
+    .search-field input:focus {
+        box-shadow: none;
+        outline: 0 none;
+        background-color: var(--bg-color);
+    }
+    .search-btn {
+        background-color: #fff;
+        color: #6c757d;
+    }
+    .search-btn:hover, .search-btn:focus {
+        background-color: #0d6efd;
+        color: white;
+    }`;
+    document.addEventListener("DOMContentLoaded", function () {
+       legitsystems_utils.inject_styles(filter_styles);
+    });
 </script>
