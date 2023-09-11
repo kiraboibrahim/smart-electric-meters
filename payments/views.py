@@ -25,7 +25,7 @@ class PaymentCallbackView(TemplateResponseMixin, View):
 
     def dispatch(self, request, *args, **kwargs):
         self.callback_response = parse_callback_response(request.body)
-        super().dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def http_method_not_allowed(self, request, *args, **kwargs):
         """The HTTP method used by the API to send the callback response isn't document, so to excuse ourselves
